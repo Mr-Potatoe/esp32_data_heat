@@ -13,8 +13,10 @@ const char *serverUrl = "http://192.168.200.111/esp32_data_heat/insert_data.php"
 DHT dht(26, DHT11);
 
 // Sensor coordinates (Latitude, Longitude)
-const char *sensorLatitude = "7.947062";    // Replace with actual latitude
-const char *sensorLongitude = "123.587546"; // Replace with actual longitude
+const char *sensorLatitude = "7.957062";    // Replace with actual latitude
+const char *sensorLongitude = "123.527546"; // Replace with actual longitude
+const int sensor_id = 1; // Define your sensor ID (it can be any unique number)
+
 
 void setup() {
   Serial.begin(115200);
@@ -45,7 +47,8 @@ void loop() {
       http.addHeader("Content-Type", "application/x-www-form-urlencoded");  // Set header for POST request
 
       // Create POST data including sensor coordinates and alert
-      String postData = "temperature=" + String(temperature) +
+      String postData = "sensor_id=" + String(sensor_id) + // include the sensor ID
+                        "&temperature=" + String(temperature) +
                         "&humidity=" + String(humidity) +
                         "&heat_index=" + String(heatIndex) +
                         "&alert=" + alertLevel +
