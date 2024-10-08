@@ -55,14 +55,79 @@ $result = $stmt->get_result();
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php include '../components/head.php'; ?>
+<?php include '../components/head.php'; ?>
     <style>
-        /* Custom styles for the alert levels */
-        .normal { background-color: #dff0d8; }
-        .caution { background-color: #fcf8e3; }
-        .extreme-caution { background-color: #f0ad4e; }
-        .danger { background-color: #d9534f; }
-        .extreme-danger { background-color: #c9302c; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .page-item {
+            margin: 0 5px;
+        }
+        .page-link {
+            padding: 8px 12px;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .page-link:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        .page-item.active .page-link {
+            background-color: #007bff;
+            color: white;
+        }
+        .alert {
+            text-align: center;
+            color: red;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -70,105 +135,97 @@ $result = $stmt->get_result();
     <!-- ======= Header ======= -->
     <?php include '../components/header.php'; ?>
 
+
     <!-- ======= Sidebar ======= -->
     <?php include '../components/sidebar.php'; ?>
 
     <main id="main" class="main">
-        <div class="container mt-5">
-            <h2>Sensor Data View</h2>
+    <div class="container">
+        <h2>Sensor Data View</h2>
 
-            <form method="GET" class="mb-4">
-                <div class="form-group">
-                    <label for="sensor_id">Select Sensor ID:</label>
-                    <select name="sensor_id" id="sensor_id" class="form-control" onchange="this.form.submit()">
-                        <option value="">-- All Sensors --</option>
-                        <?php foreach ($sensorIds as $sensor): ?>
-                            <option value="<?= $sensor['sensor_id'] ?>" <?= ($selectedSensorId == $sensor['sensor_id']) ? 'selected' : '' ?>>
-                                Sensor ID: <?= $sensor['sensor_id'] ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-            </form>
+        <form method="GET" class="mb-4">
+            <div class="form-group">
+                <label for="sensor_id">Select Sensor ID:</label>
+                <select name="sensor_id" id="sensor_id" class="form-control" onchange="this.form.submit()">
+                    <option value="">-- All Sensors --</option>
+                    <?php foreach ($sensorIds as $sensor): ?>
+                        <option value="<?= $sensor['sensor_id'] ?>" <?= ($selectedSensorId == $sensor['sensor_id']) ? 'selected' : '' ?>>
+                            Sensor ID: <?= htmlspecialchars($sensor['sensor_id']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </form>
 
-            <table class="table table-bordered table-responsive">
-                <thead class="thead-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Sensor ID</th>
-                        <th>Temperature (°C)</th>
-                        <th>Humidity (%)</th>
-                        <th>Heat Index</th>
-                        <th>Alert Level</th>
-                        <th>Latitude</th>
-                        <th>Longitude</th>
-                        <th>Alert Time</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if ($result->num_rows > 0): ?>
-                        <?php while ($row = $result->fetch_assoc()): ?>
-                            <tr class="<?= getAlertClass($row['heat_index']) ?>">
-                                <td><?= $row['id'] ?></td>
-                                <td><?= $row['sensor_id'] ?></td>
-                                <td><?= $row['temperature'] ?></td>
-                                <td><?= $row['humidity'] ?></td>
-                                <td><?= $row['heat_index'] ?></td>
-                                <td><?= $row['alert'] ?></td>
-                                <td><?= $row['latitude'] ?></td>
-                                <td><?= $row['longitude'] ?></td>
-                                <td><?= $row['alert_time'] ?></td>
-                            </tr>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="9" class="text-center">No data available for this sensor.</td>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Sensor ID</th>
+                    <th>Temperature (°C)</th>
+                    <th>Humidity (%)</th>
+                    <th>Heat Index</th>
+                    <th>Alert Level</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                    <th>Alert Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                // Function to determine the background color based on the heat index
+                function getAlertClass($heatIndex) {
+                    if ($heatIndex < 27) {
+                        return ''; // No background color for normal
+                    } elseif ($heatIndex >= 27 && $heatIndex < 32) {
+                        return 'background-color: #ffc107;'; // Caution: Yellow
+                    } elseif ($heatIndex >= 32 && $heatIndex < 41) {
+                        return 'background-color: #ff9800;'; // Extreme Caution: Orange
+                    } elseif ($heatIndex >= 41 && $heatIndex < 54) {
+                        return 'background-color: #f44336;'; // Danger: Red
+                    } else {
+                        return 'background-color: #c62828;'; // Extreme Danger: Dark Red
+                    }
+                }
+                ?>
+                <?php if ($result->num_rows > 0): ?>
+                    <?php while ($row = $result->fetch_assoc()): ?>
+                        <tr style="<?= getAlertClass($row['heat_index']) ?>">
+                            <td><?= htmlspecialchars($row['id']) ?></td>
+                            <td><?= htmlspecialchars($row['sensor_id']) ?></td>
+                            <td><?= htmlspecialchars($row['temperature']) ?></td>
+                            <td><?= htmlspecialchars($row['humidity']) ?></td>
+                            <td><?= htmlspecialchars($row['heat_index']) ?></td>
+                            <td><?= htmlspecialchars($row['alert']) ?></td>
+                            <td><?= htmlspecialchars($row['latitude']) ?></td>
+                            <td><?= htmlspecialchars($row['longitude']) ?></td>
+                            <td><?= htmlspecialchars($row['alert_time']) ?></td>
                         </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="9" class="alert">No data available for this sensor.</td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
 
-            <!-- Pagination -->
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item <?= ($currentPage <= 1) ? 'disabled' : '' ?>">
-                        <a class="page-link" href="?page=<?= $currentPage - 1 ?>&sensor_id=<?= $selectedSensorId ?>">Previous</a>
-                    </li>
-                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                        <li class="page-item <?= ($currentPage == $i) ? 'active' : '' ?>">
-                            <a class="page-link" href="?page=<?= $i ?>&sensor_id=<?= $selectedSensorId ?>"><?= $i ?></a>
-                        </li>
-                    <?php endfor; ?>
-                    <li class="page-item <?= ($currentPage >= $totalPages) ? 'disabled' : '' ?>">
-                        <a class="page-link" href="?page=<?= $currentPage + 1 ?>&sensor_id=<?= $selectedSensorId ?>">Next</a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
+        <!-- Pagination -->
+        <nav class="pagination">
+            <a class="page-link <?= ($currentPage <= 1) ? 'disabled' : '' ?>" href="?page=<?= $currentPage - 1 ?>&sensor_id=<?= $selectedSensorId ?>">Previous</a>
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <span class="page-item <?= ($currentPage == $i) ? 'active' : '' ?>">
+                    <a class="page-link" href="?page=<?= $i ?>&sensor_id=<?= $selectedSensorId ?>"><?= $i ?></a>
+                </span>
+            <?php endfor; ?>
+            <a class="page-link <?= ($currentPage >= $totalPages) ? 'disabled' : '' ?>" href="?page=<?= $currentPage + 1 ?>&sensor_id=<?= $selectedSensorId ?>">Next</a>
+        </nav>
+    </div>
     </main>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <!-- footer and scroll to top -->
     <?php include '../components/footer.php'; ?>
-    <!-- include scripts -->
     <?php include '../components/scripts.php'; ?>
 
 </body>
 </html>
-
-<?php
-// Function to determine the background color based on the heat index
-function getAlertClass($heatIndex) {
-    if ($heatIndex < 27) {
-        return 'normal'; // No background color for normal
-    } elseif ($heatIndex >= 27 && $heatIndex < 32) {
-        return 'caution'; // Yellow
-    } elseif ($heatIndex >= 32 && $heatIndex < 41) {
-        return 'extreme-caution'; // Orange
-    } elseif ($heatIndex >= 41 && $heatIndex < 54) {
-        return 'danger'; // Red
-    } else {
-        return 'extreme-danger'; // Dark Red
-    }
-}
-?>
