@@ -1,0 +1,18 @@
+{
+    "name": "easp32_heatmap/esp32",
+    "description": "a school project",
+    "autoload": {
+        "psr-4": {
+            "Easp32Heatmap\\Esp32\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Mr Potatoe",
+            "email": "jaymeajarns@gmail.com"
+        }
+    ],
+    "require": {
+        "vlucas/phpdotenv": "^5.6"
+    }
+}
