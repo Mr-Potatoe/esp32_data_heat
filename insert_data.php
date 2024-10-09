@@ -16,6 +16,7 @@ $alert = $_POST['alert'] ?? null;
 $latitude = $_POST['latitude'] ?? null;
 $longitude = $_POST['longitude'] ?? null;
 $sensor_id = $_POST['sensor_id'] ?? null; // New sensor_id field
+$location_name = $_POST['location_name'] ?? null; // New location_name field
 
 // Validate inputs
 if (
@@ -24,7 +25,8 @@ if (
     !is_numeric($heat_index) || 
     !is_numeric($latitude) || 
     !is_numeric($longitude) || 
-    !is_numeric($sensor_id)
+    !is_numeric($sensor_id) || 
+    empty($location_name) // Ensure location_name is not empty
 ) {
     header('Content-Type: application/json');
     echo json_encode(['status' => 'error', 'message' => 'Invalid input data']);
@@ -32,8 +34,8 @@ if (
 }
 
 // Prepare the SQL query using prepared statements
-$sql = "INSERT INTO sensor_readings (sensor_id, temperature, humidity, heat_index, alert, latitude, longitude, alert_time) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+$sql = "INSERT INTO sensor_readings (sensor_id, temperature, humidity, heat_index, alert, latitude, longitude, location_name, alert_time) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
 $stmt = $conn->prepare($sql);
 
@@ -45,7 +47,7 @@ if (!$stmt) {
 }
 
 // Bind the parameters to the prepared statement
-$stmt->bind_param("ddddssd", $sensor_id, $temperature, $humidity, $heat_index, $alert, $latitude, $longitude);
+$stmt->bind_param("ddddssss", $sensor_id, $temperature, $humidity, $heat_index, $alert, $latitude, $longitude, $location_name);
 
 // Execute the statement
 header('Content-Type: application/json');

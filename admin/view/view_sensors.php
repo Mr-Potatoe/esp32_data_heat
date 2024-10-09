@@ -26,23 +26,23 @@ $currentPage = max(1, min($currentPage, $totalPages)); // Ensure it's within ran
 // Calculate the starting limit for the SQL query
 $startLimit = ($currentPage - 1) * $resultsPerPage;
 
-// Fetch all unique sensor IDs
-$sensorIds = $conn->query("SELECT DISTINCT sensor_id FROM sensor_readings")->fetch_all(MYSQLI_ASSOC);
+// Fetch all unique location names
+$locations = $conn->query("SELECT DISTINCT location_name FROM sensor_readings")->fetch_all(MYSQLI_ASSOC);
 
-// Get the selected sensor_id from the dropdown
-$selectedSensorId = isset($_GET['sensor_id']) ? $_GET['sensor_id'] : '';
+// Get the selected location from the dropdown
+$selectedLocation = isset($_GET['location_name']) ? $_GET['location_name'] : '';
 
-// Prepare the SQL query to fetch data based on the selected sensor_id with pagination
+// Prepare the SQL query to fetch data based on the selected location with pagination
 $sql = "SELECT * FROM sensor_readings";
-if ($selectedSensorId) {
-    $sql .= " WHERE sensor_id = ?";
+if ($selectedLocation) {
+    $sql .= " WHERE location_name = ?";
 }
 $sql .= " LIMIT ?, ?";
 
 // Prepare the statement
 $stmt = $conn->prepare($sql);
-if ($selectedSensorId) {
-    $stmt->bind_param("sii", $selectedSensorId, $startLimit, $resultsPerPage); // Binding sensor_id as string, and start limit and results per page as integers
+if ($selectedLocation) {
+    $stmt->bind_param("sii", $selectedLocation, $startLimit, $resultsPerPage); // Binding location as string, and start limit and results per page as integers
 } else {
     $stmt->bind_param("ii", $startLimit, $resultsPerPage); // Binding start limit and results per page as integers
 }
@@ -145,12 +145,12 @@ $result = $stmt->get_result();
 
         <form method="GET" class="mb-4">
             <div class="form-group">
-                <label for="sensor_id">Select Sensor ID:</label>
-                <select name="sensor_id" id="sensor_id" class="form-control" onchange="this.form.submit()">
-                    <option value="">-- All Sensors --</option>
-                    <?php foreach ($sensorIds as $sensor): ?>
-                        <option value="<?= $sensor['sensor_id'] ?>" <?= ($selectedSensorId == $sensor['sensor_id']) ? 'selected' : '' ?>>
-                            Sensor ID: <?= htmlspecialchars($sensor['sensor_id']) ?>
+                <label for="location_name">Select Location Name:</label>
+                <select name="location_name" id="location_name" class="form-control" onchange="this.form.submit()">
+                    <option value="">-- All Locations --</option>
+                    <?php foreach ($locations as $location): ?>
+                        <option value="<?= $location['location_name'] ?>" <?= ($selectedLocation == $location['location_name']) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($location['location_name']) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -169,6 +169,7 @@ $result = $stmt->get_result();
                     <th>Latitude</th>
                     <th>Longitude</th>
                     <th>Alert Time</th>
+                    <th>Location Name</th> <!-- New column for location -->
                 </tr>
             </thead>
             <tbody>
@@ -200,11 +201,12 @@ $result = $stmt->get_result();
                             <td><?= htmlspecialchars($row['latitude']) ?></td>
                             <td><?= htmlspecialchars($row['longitude']) ?></td>
                             <td><?= htmlspecialchars($row['alert_time']) ?></td>
+                            <td><?= htmlspecialchars($row['location_name']) ?></td> <!-- Display location name -->
                         </tr>
                     <?php endwhile; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="9" class="alert">No data available for this sensor.</td>
+                        <td colspan="10" class="alert">No data available for this location.</td>
                     </tr>
                 <?php endif; ?>
             </tbody>
@@ -212,13 +214,13 @@ $result = $stmt->get_result();
 
         <!-- Pagination -->
         <nav class="pagination">
-            <a class="page-link <?= ($currentPage <= 1) ? 'disabled' : '' ?>" href="?page=<?= $currentPage - 1 ?>&sensor_id=<?= $selectedSensorId ?>">Previous</a>
+            <a class="page-link <?= ($currentPage <= 1) ? 'disabled' : '' ?>" href="?page=<?= $currentPage - 1 ?>&location_name=<?= $selectedLocation ?>">Previous</a>
             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                 <span class="page-item <?= ($currentPage == $i) ? 'active' : '' ?>">
-                    <a class="page-link" href="?page=<?= $i ?>&sensor_id=<?= $selectedSensorId ?>"><?= $i ?></a>
+                    <a class="page-link" href="?page=<?= $i ?>&location_name=<?= $selectedLocation ?>"><?= $i ?></a>
                 </span>
             <?php endfor; ?>
-            <a class="page-link <?= ($currentPage >= $totalPages) ? 'disabled' : '' ?>" href="?page=<?= $currentPage + 1 ?>&sensor_id=<?= $selectedSensorId ?>">Next</a>
+            <a class="page-link <?= ($currentPage >= $totalPages) ? 'disabled' : '' ?>" href="?page=<?= $currentPage + 1 ?>&location_name=<?= $selectedLocation ?>">Next</a>
         </nav>
     </div>
     </main>

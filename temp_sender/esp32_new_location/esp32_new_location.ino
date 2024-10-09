@@ -13,10 +13,12 @@ const char *serverUrl = "http://192.168.200.111/esp32_data_heat/insert_data.php"
 DHT dht(26, DHT11);
 
 // Sensor coordinates (Latitude, Longitude)
-const char *sensorLatitude = "7.952062";    // Replace with actual latitude
-const char *sensorLongitude = "123.521546"; // Replace with actual longitude
-const int sensor_id = 2; // Define your sensor ID (it can be any unique number)
+const char *sensorLatitude = "7.952005";    // Replace with actual latitude
+const char *sensorLongitude = "123.521234"; // Replace with actual longitude
+const int sensor_id = 3; // Define your sensor ID (it can be any unique number)
 
+// Sensor location name
+const char *sensorLocationName = "BSIS Bulding"; // Add the location name here
 
 void setup() {
   Serial.begin(115200);
@@ -46,14 +48,15 @@ void loop() {
       http.begin(serverUrl);  // Specify the server URL
       http.addHeader("Content-Type", "application/x-www-form-urlencoded");  // Set header for POST request
 
-      // Create POST data including sensor coordinates and alert
+      // Create POST data including sensor location name, sensor coordinates, and alert
       String postData = "sensor_id=" + String(sensor_id) + // include the sensor ID
                         "&temperature=" + String(temperature) +
                         "&humidity=" + String(humidity) +
                         "&heat_index=" + String(heatIndex) +
                         "&alert=" + alertLevel +
                         "&latitude=" + String(sensorLatitude) +
-                        "&longitude=" + String(sensorLongitude);
+                        "&longitude=" + String(sensorLongitude) +
+                        "&location_name=" + String(sensorLocationName); // Include location name
 
       // Send the POST request
       int httpResponseCode = http.POST(postData);

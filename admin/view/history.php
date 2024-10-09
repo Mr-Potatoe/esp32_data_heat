@@ -8,7 +8,51 @@ loadEnv();
 // Connect to the database
 $conn = dbConnect();
 
-require_once '../../fetch_php/fetch_history.php';
+// Get the filter type from the dropdown (hourly, daily, etc.)
+$filterType = isset($_GET['filter']) ? $_GET['filter'] : 'hourly';
+
+// Fetch all distinct locations
+$locationsQuery = "SELECT DISTINCT location_name FROM sensor_readings";
+$locationsResult = $conn->query($locationsQuery);
+
+// Modify the SQL query to use alert_time instead of timestamp
+$sql = "
+    SELECT location_name, 
+           CASE 
+               WHEN ? = 'hourly' THEN DATE_FORMAT(alert_time, '%Y-%m-%d %H:00:00')
+               WHEN ? = 'daily' THEN DATE_FORMAT(alert_time, '%Y-%m-%d')
+               WHEN ? = 'weekly' THEN CONCAT(YEAR(alert_time), '-W', WEEK(alert_time))
+               WHEN ? = 'monthly' THEN DATE_FORMAT(alert_time, '%Y-%m')
+               WHEN ? = 'yearly' THEN YEAR(alert_time)
+           END AS period, 
+           AVG(temperature) AS avg_temp, 
+           AVG(humidity) AS avg_humidity, 
+           AVG(heat_index) AS avg_heat_index
+    FROM sensor_readings
+    GROUP BY location_name, period
+    ORDER BY location_name, period";
+
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("sssss", $filterType, $filterType, $filterType, $filterType, $filterType);
+$stmt->execute();
+$result = $stmt->get_result();
+
+
+
+// Function to determine the background color class based on the heat index
+function getAlertClass($heatIndex) {
+    if ($heatIndex < 27) {
+        return 'normal';
+    } elseif ($heatIndex >= 27 && $heatIndex < 32) {
+        return 'caution';
+    } elseif ($heatIndex >= 32 && $heatIndex < 41) {
+        return 'extreme-caution';
+    } elseif ($heatIndex >= 41 && $heatIndex < 54) {
+        return 'danger';
+    } else {
+        return 'extreme-danger';
+    }
+}
 
 ?>
 
@@ -17,7 +61,7 @@ require_once '../../fetch_php/fetch_history.php';
 <head>
     <?php include '../components/head.php'; ?>
     <style>
-        /* Basic CSS for table and color coding */
+        /* Table and color coding */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -73,7 +117,7 @@ require_once '../../fetch_php/fetch_history.php';
 
     <main id="main" class="main">
 <div class="container">
-    <h1>Heatmap Data Table</h1>
+    <h1>Heatmap Data by Location</h1>
 
     <!-- Filter Dropdown -->
     <form method="GET">
@@ -87,36 +131,53 @@ require_once '../../fetch_php/fetch_history.php';
         </select>
     </form>
 
-    <!-- Data Table -->
-    <table>
-        <thead>
-            <tr>
-                <th>Period</th>
-                <th>Avg Temperature (°C)</th>
-                <th>Avg Humidity (%)</th>
-                <th>Avg Heat Index (°C)</th>
-                <th>Alert Level</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
-            if ($result && $result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    $alertClass = getAlertClass($row['avg_heat_index']); // Get the appropriate color class
-                    echo "<tr class='{$alertClass}'>";
-                    echo "<td>{$row['period']}</td>";
-                    echo "<td>{$row['avg_temp']}</td>";
-                    echo "<td>{$row['avg_humidity']}</td>";
-                    echo "<td>{$row['avg_heat_index']}</td>";
-                    echo "<td>" . ucfirst(str_replace('-', ' ', $alertClass)) . "</td>";
-                    echo "</tr>";
-                }
-            } else {
-                echo "<tr><td colspan='5'>No data available</td></tr>";
-            }
-            ?>
-        </tbody>
-    </table>
+    <!-- Loop through each location and generate a table for each -->
+    <?php if ($locationsResult && $locationsResult->num_rows > 0): ?>
+        <?php while ($locationRow = $locationsResult->fetch_assoc()): ?>
+            <h2>Location: <?= htmlspecialchars($locationRow['location_name']) ?></h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Period</th>
+                        <th>Avg Temperature (°C)</th>
+                        <th>Avg Humidity (%)</th>
+                        <th>Avg Heat Index (°C)</th>
+                        <th>Alert Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    // Reset result pointer and loop through data to display only for the current location
+                    $result->data_seek(0);
+                    $locationName = $locationRow['location_name'];
+                    $hasData = false; // To check if the current location has any data
+                    
+                    while ($row = $result->fetch_assoc()) {
+                        if ($row['location_name'] == $locationName) {
+                            $hasData = true;
+                            $alertClass = getAlertClass($row['avg_heat_index']);
+                            echo "<tr class='{$alertClass}'>";
+                            echo "<td>{$row['period']}</td>";
+                            echo "<td>{$row['avg_temp']}</td>";
+                            echo "<td>{$row['avg_humidity']}</td>";
+                            echo "<td>{$row['avg_heat_index']}</td>";
+                            echo "<td>" . ucfirst(str_replace('-', ' ', $alertClass)) . "</td>";
+                            echo "</tr>";
+                        }
+                    }
+                    
+                    // If no data is available for the location
+                    if (!$hasData) {
+                        echo "<tr><td colspan='5'>No data available for this location.</td></tr>";
+                    }
+                    ?>
+                </tbody>
+            </table>
+        <?php endwhile; ?>
+    <?php else: ?>
+        <p>No locations found.</p>
+    <?php endif; ?>
 
     <!-- Legend -->
     <div class="legend">
