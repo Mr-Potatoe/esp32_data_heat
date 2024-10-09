@@ -1,109 +1,269 @@
 <?php include '../../fetch_php/admin_protect.php'; ?>
-<?php 
+<?php
 require '../../config.php'; // Configuration and database connection
+loadEnv(); // Load environment variables
+$conn = dbConnect(); // Connect to the database
 
-// Load environment variables
-loadEnv();
+// Fetch sensor readings grouped by location
+$query = "SELECT location_name, AVG(temperature) AS avg_temperature, AVG(humidity) AS avg_humidity, AVG(heat_index) AS avg_heat_index
+          FROM sensor_readings
+          GROUP BY location_name
+          ORDER BY location_name";
+$result = $conn->query($query);
 
-// Connect to the database
-$conn = dbConnect();
+// Prepare data for the charts
+$locations = [];
+$avgTemperatures = [];
+$avgHumidity = [];
+$avgHeatIndexes = []; // For average heat index
+
+if ($result->num_rows > 0) {
+    while($row = $result->fetch_assoc()) {
+        $locations[] = htmlspecialchars($row['location_name']);
+        $avgTemperatures[] = floatval($row['avg_temperature']);
+        $avgHumidity[] = floatval($row['avg_humidity']);
+        $avgHeatIndexes[] = floatval($row['avg_heat_index']); // Store avg heat index
+    }
+    // Debugging: Check the values
+    error_log(print_r($locations, true));
+    error_log(print_r($avgTemperatures, true));
+    error_log(print_r($avgHumidity, true));
+    error_log(print_r($avgHeatIndexes, true));
+} else {
+    error_log("No data found for sensor readings.");
+}
+
+
+// Fetch time series data based on the selected interval (default: daily)
+$interval = isset($_GET['interval']) ? $_GET['interval'] : 'day';
+$interval_query = "";
+
+switch ($interval) {
+    case 'hour':
+        $interval_query = "DATE_FORMAT(alert_time, '%Y-%m-%d %H:00:00') as time_label";
+        break;
+    case 'day':
+        $interval_query = "DATE_FORMAT(alert_time, '%Y-%m-%d') as time_label";
+        break;
+    case 'week':
+        $interval_query = "DATE_FORMAT(alert_time, '%Y-%u') as time_label"; // week number
+        break;
+    case 'month':
+        $interval_query = "DATE_FORMAT(alert_time, '%Y-%m') as time_label";
+        break;
+    case 'year':
+        $interval_query = "DATE_FORMAT(alert_time, '%Y') as time_label";
+        break;
+}
+
+// Prepare SQL query for time series data for all locations
+$query_time_series = "SELECT $interval_query, location_name, AVG(temperature) AS avg_temperature, AVG(humidity) AS avg_humidity, AVG(heat_index) AS avg_heat_index
+                      FROM sensor_readings
+                      GROUP BY time_label, location_name
+                      ORDER BY alert_time";
+$result_time_series = $conn->query($query_time_series);
+
+// Prepare data for the line charts
+$timeLabels = [];
+$locationData = [];
+
+if ($result_time_series->num_rows > 0) {
+    while($row = $result_time_series->fetch_assoc()) {
+        $timeLabel = htmlspecialchars($row['time_label']);
+        $locationName = htmlspecialchars($row['location_name']);
+        
+        if (!isset($locationData[$locationName])) {
+            $locationData[$locationName] = [
+                'timeLabels' => [],
+                'avgTemperatures' => [],
+                'avgHumidity' => [],
+                'avgHeatIndexes' => []
+            ];
+        }
+        
+        $locationData[$locationName]['timeLabels'][] = $timeLabel;
+        $locationData[$locationName]['avgTemperatures'][] = floatval($row['avg_temperature']);
+        $locationData[$locationName]['avgHumidity'][] = floatval($row['avg_humidity']);
+        $locationData[$locationName]['avgHeatIndexes'][] = floatval($row['avg_heat_index']);
+    }
+}
+
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <?php include '../components/head.php'; ?>
+    <title>Sensor Readings Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
 </head>
 <body>
 
     <!-- ======= Header ======= -->
     <?php include '../components/header.php'; ?>
 
-
     <!-- ======= Sidebar ======= -->
     <?php include '../components/sidebar.php'; ?>
 
     <main id="main" class="main">
-    <!-- Page Title -->
-    <div class="pagetitle mb-4">
-        <h1>Dashboard</h1>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="dashboard.php">Home</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
-            </ol>
-        </nav>
-    </div><!-- End Page Title -->
+        <div class="container-fluid">
+            <h1 class="mt-4">Sensor Readings Dashboard</h1>
 
-    <section class="section dashboard">
-    <!-- Overview Cards -->
-    <div class="row">
+            <!-- Filter Dropdown for Time Interval -->
+            <div class="mb-4">
+                <label for="interval" class="form-label">Select Time Interval:</label>
+                <select id="interval" class="form-select" onchange="filterData()">
+                    <option value="hour" <?php echo $interval === 'hour' ? 'selected' : ''; ?>>Hourly</option>
+                    <option value="day" <?php echo $interval === 'day' ? 'selected' : ''; ?>>Daily</option>
+                    <option value="week" <?php echo $interval === 'week' ? 'selected' : ''; ?>>Weekly</option>
+                    <option value="month" <?php echo $interval === 'month' ? 'selected' : ''; ?>>Monthly</option>
+                    <option value="year" <?php echo $interval === 'year' ? 'selected' : ''; ?>>Yearly</option>
+                </select>
+            </div>
 
-    <!-- Card: Total Sensors -->
-    <div class="col-sm-6 col-lg-3 mb-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h6 class="card-title text-muted">Total Sensors</h6>
-                <p class="card-text display-4 font-weight-bold"></p>
+<!-- Individual Bar Charts for Each Location -->
+
+<div id="barCharts">
+    <?php foreach ($locations as $index => $locationName): ?>
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4><?php echo htmlspecialchars($locationName); ?> Average Readings</h4>
+                <canvas id="barChart_<?php echo $index; ?>"></canvas>
             </div>
         </div>
-    </div>
 
-    <!-- Card: Active Sensors -->
-    <div class="col-sm-6 col-lg-3 mb-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h6 class="card-title text-muted">Active Sensors</h6>
-                <p class="card-text display-4 font-weight-bold"></p>
-            </div>
-        </div>
-    </div>
+        <script>
+            // Prepare data for individual bar charts
+            (function(index, locationName) {
+                const avgTemperature = <?php echo json_encode($avgTemperatures[$index] ?? 0); ?>; // Default to 0 if undefined
+                const avgHumidity = <?php echo json_encode($avgHumidity[$index] ?? 0); ?>; // Default to 0 if undefined
+                const avgHeatIndex = <?php echo json_encode($avgHeatIndexes[$index] ?? 0); ?>; // Default to 0 if undefined
 
-    <!-- Card: Recent Heat Index -->
-    <div class="col-sm-6 col-lg-3 mb-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h6 class="card-title text-muted">Recent Heat Index</h6>
-                <p class="card-text display-4 font-weight-bold"></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Card: Active Alerts -->
-    <div class="col-sm-6 col-lg-3 mb-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h6 class="card-title text-muted">Active Alerts</h6>
-                <p class="card-text display-4 font-weight-bold"></p>
-            </div>
-        </div>
-    </div>
-</div><!-- End Overview Cards -->
-
-
-<!-- Heat Index Chart -->
-<div class="mb-5">
-    <h4 class="mb-4">Heat Index Trends</h4>
-    <div class="btn-group mb-4" role="group" aria-label="Chart Filter Buttons">
-        <button id="hourlyButton" class="btn btn-outline-primary active" onclick="updateChart('hourly', this)">Hourly</button>
-        <button id="dailyButton" class="btn btn-outline-primary" onclick="updateChart('daily', this)">Daily</button>
-        <button id="weeklyButton" class="btn btn-outline-primary" onclick="updateChart('weekly', this)">Weekly</button>
-        <button id="monthlyButton" class="btn btn-outline-primary" onclick="updateChart('monthly', this)">Monthly</button>
-        <button id="yearlyButton" class="btn btn-outline-primary" onclick="updateChart('yearly', this)">Yearly</button>
-    </div>
-    <div class="chart-container" style="position: relative; height:60vh; width:100%">
-        <canvas id="heatIndexChart"></canvas>
-    </div>
+                const ctxBar = document.getElementById(`barChart_${index}`).getContext('2d');
+                new Chart(ctxBar, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Average Temperature (°C)', 'Average Humidity (%)', 'Average Heat Index'],
+                        datasets: [{
+                            label: locationName,
+                            data: [avgTemperature, avgHumidity, avgHeatIndex],
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.2)',
+                                'rgba(54, 162, 235, 0.2)',
+                                'rgba(255, 206, 86, 0.2)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 206, 86, 1)'
+                            ],
+                            borderWidth: 1,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                            title: {
+                                display: true,
+                                text: `Average Readings for ${locationName}`,
+                            }
+                        }
+                    }
+                });
+            })(<?php echo $index; ?>, '<?php echo htmlspecialchars($locationName); ?>'); // Immediately Invoked Function Expression (IIFE)
+        </script>
+    <?php endforeach; ?>
 </div>
-    </section>
+
+
+
+
+            <!-- Line Charts for Each Location -->
+            <div id="lineCharts">
+                <?php foreach ($locationData as $locationName => $data): ?>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h4><?php echo htmlspecialchars($locationName); ?> Trends</h4>
+                            <canvas id="lineChart_<?php echo htmlspecialchars($locationName); ?>"></canvas>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
     </main>
 
-    <!-- footer and scroll to top -->
     <?php include '../components/footer.php'; ?>
-    <!-- include scripts -->
     <?php include '../components/scripts.php'; ?>
 
-    <!-- Heat Index Chart -->
+    <script>
+        // Prepare line charts for each location
+        const locationData = <?php echo json_encode($locationData); ?>;
 
+        for (const location in locationData) {
+            const data = locationData[location];
+            const ctxLine = document.getElementById(`lineChart_${location}`).getContext('2d');
+
+            new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: data.timeLabels,
+                    datasets: [
+                        {
+                            label: 'Average Temperature (°C)',
+                            data: data.avgTemperatures,
+                            fill: false,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Average Humidity (%)',
+                            data: data.avgHumidity,
+                            fill: false,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Average Heat Index',
+                            data: data.avgHeatIndexes,
+                            fill: false,
+                            borderColor: 'rgba(255, 206, 86, 1)',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: `Trends for ${location}`,
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to filter data based on selected interval
+        function filterData() {
+            const selectedInterval = document.getElementById('interval').value;
+            window.location.href = `?interval=${selectedInterval}`; // Redirect with the selected interval
+        }
+    </script>
 </body>
 </html>

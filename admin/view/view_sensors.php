@@ -37,7 +37,7 @@ $sql = "SELECT * FROM sensor_readings";
 if ($selectedLocation) {
     $sql .= " WHERE location_name = ?";
 }
-$sql .= " LIMIT ?, ?";
+$sql .= " ORDER BY alert_time DESC LIMIT ?, ?"; // Add ORDER BY alert_time DESC
 
 // Prepare the statement
 $stmt = $conn->prepare($sql);
@@ -47,51 +47,126 @@ if ($selectedLocation) {
     $stmt->bind_param("ii", $startLimit, $resultsPerPage); // Binding start limit and results per page as integers
 }
 
+
 // Execute the statement
 $stmt->execute();
 $result = $stmt->get_result();
-?>
+
+// Function to determine the background color class based on the heat index
+
+
+    ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <?php include '../components/head.php'; ?>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            margin: 0;
-            padding: 20px;
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-        }
-        .container {
-            max-width: 1200px;
-            margin: auto;
-            padding: 20px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border: 1px solid #ddd;
-        }
-        th {
-            background-color: #007bff;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
+<style>
+
+.container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2 {
+    margin-bottom: 20px;
+}
+
+form {
+    margin-bottom: 20px;
+}
+
+label {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+select {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+}
+
+th {
+    background-color: #f4f4f4;
+    color: #555;
+}
+
+
+.normal {
+    background-color: #ffffff; /* Normal */
+}
+
+.caution {
+    background-color: #ffff99; /* Light Yellow */
+}
+
+.extreme-caution {
+    background-color: #ffcc99; /* Light Orange */
+}
+
+.danger {
+    background-color: #ff9999; /* Light Red */
+}
+
+.extreme-danger {
+    background-color: #ff6666; /* Darker Red */
+}
+
+
+.legend {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap; /* Wrap items on smaller screens */
+}
+
+.legend div {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    table {
+        font-size: 14px; /* Adjust font size for smaller screens */
+    }
+
+    th, td {
+        padding: 8px; /* Reduce padding */
+    }
+
+    h1 {
+        font-size: 24px; /* Adjust heading size */
+    }
+
+    h2 {
+        font-size: 20px; /* Adjust subheading size */
+    }
+}
         .pagination {
             display: flex;
             justify-content: center;
@@ -115,19 +190,6 @@ $result = $stmt->get_result();
             background-color: #007bff;
             color: white;
         }
-        .alert {
-            text-align: center;
-            color: red;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-control {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
     </style>
 </head>
 <body>
@@ -142,6 +204,14 @@ $result = $stmt->get_result();
     <main id="main" class="main">
     <div class="container">
         <h2>Sensor Data View</h2>
+                    <!-- Legend -->
+                    <div class="legend">
+                <div><div class="legend-color normal"></div>Normal (&lt;27°C)</div>
+                <div><div class="legend-color caution"></div>Caution (27°C - 32°C)</div>
+                <div><div class="legend-color extreme-caution"></div>Extreme Caution (32°C - 41°C)</div>
+                <div><div class="legend-color danger"></div>Danger (41°C - 54°C)</div>
+                <div><div class="legend-color extreme-danger"></div>Extreme Danger (&gt;54°C)</div>
+            </div>
 
         <form method="GET" class="mb-4">
             <div class="form-group">
@@ -162,6 +232,7 @@ $result = $stmt->get_result();
                 <tr>
                     <th>ID</th>
                     <th>Sensor ID</th>
+                    <th>Location Name</th> <!-- New column for location -->
                     <th>Temperature (°C)</th>
                     <th>Humidity (%)</th>
                     <th>Heat Index</th>
@@ -169,47 +240,47 @@ $result = $stmt->get_result();
                     <th>Latitude</th>
                     <th>Longitude</th>
                     <th>Alert Time</th>
-                    <th>Location Name</th> <!-- New column for location -->
                 </tr>
             </thead>
+            <?php
+function getAlertClass($heatIndex) {
+    if ($heatIndex < 27) {
+        return 'normal'; // Normal (<27°C)
+    } elseif ($heatIndex >= 27 && $heatIndex < 32) {
+        return 'caution'; // Caution (27°C - 32°C)
+    } elseif ($heatIndex >= 32 && $heatIndex < 41) {
+        return 'extreme-caution'; // Extreme Caution (32°C - 41°C)
+    } elseif ($heatIndex >= 41 && $heatIndex < 54) {
+        return 'danger'; // Danger (41°C - 54°C)
+    } else {
+        return 'extreme-danger'; // Extreme Danger (>54°C)
+    }
+}
+
+            ?>
             <tbody>
-                <?php
-                // Function to determine the background color based on the heat index
-                function getAlertClass($heatIndex) {
-                    if ($heatIndex < 27) {
-                        return ''; // No background color for normal
-                    } elseif ($heatIndex >= 27 && $heatIndex < 32) {
-                        return 'background-color: #ffc107;'; // Caution: Yellow
-                    } elseif ($heatIndex >= 32 && $heatIndex < 41) {
-                        return 'background-color: #ff9800;'; // Extreme Caution: Orange
-                    } elseif ($heatIndex >= 41 && $heatIndex < 54) {
-                        return 'background-color: #f44336;'; // Danger: Red
-                    } else {
-                        return 'background-color: #c62828;'; // Extreme Danger: Dark Red
-                    }
-                }
-                ?>
-                <?php if ($result->num_rows > 0): ?>
-                    <?php while ($row = $result->fetch_assoc()): ?>
-                        <tr style="<?= getAlertClass($row['heat_index']) ?>">
-                            <td><?= htmlspecialchars($row['id']) ?></td>
-                            <td><?= htmlspecialchars($row['sensor_id']) ?></td>
-                            <td><?= htmlspecialchars($row['temperature']) ?></td>
-                            <td><?= htmlspecialchars($row['humidity']) ?></td>
-                            <td><?= htmlspecialchars($row['heat_index']) ?></td>
-                            <td><?= htmlspecialchars($row['alert']) ?></td>
-                            <td><?= htmlspecialchars($row['latitude']) ?></td>
-                            <td><?= htmlspecialchars($row['longitude']) ?></td>
-                            <td><?= htmlspecialchars($row['alert_time']) ?></td>
-                            <td><?= htmlspecialchars($row['location_name']) ?></td> <!-- Display location name -->
-                        </tr>
-                    <?php endwhile; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="10" class="alert">No data available for this location.</td>
-                    </tr>
-                <?php endif; ?>
-            </tbody>
+    <?php if ($result->num_rows > 0): ?>
+        <?php while ($row = $result->fetch_assoc()): ?>
+            <tr class="<?= getAlertClass($row['heat_index']) ?>">
+                <td><?= htmlspecialchars($row['id']) ?></td>
+                <td><?= htmlspecialchars($row['sensor_id']) ?></td>
+                <td><?= htmlspecialchars($row['location_name']) ?></td>
+                <td><?= htmlspecialchars($row['temperature']) ?></td>
+                <td><?= htmlspecialchars($row['humidity']) ?></td>
+                <td><?= htmlspecialchars($row['heat_index']) ?></td>
+                <td><?= htmlspecialchars($row['alert']) ?></td>
+                <td><?= htmlspecialchars($row['latitude']) ?></td>
+                <td><?= htmlspecialchars($row['longitude']) ?></td>
+                <td><?= htmlspecialchars($row['alert_time']) ?></td>
+            </tr>
+        <?php endwhile; ?>
+    <?php else: ?>
+        <tr>
+            <td colspan="10" class="alert">No data available for this location.</td>
+        </tr>
+    <?php endif; ?>
+</tbody>
+
         </table>
 
         <!-- Pagination -->
