@@ -266,6 +266,7 @@ new Chart(ctxLine, {
             window.location.href = `?interval=${interval}`; // Redirect with selected interval
         }
     </script>
+    <?php include '../components/scripts.php'; ?>
 
 </body>
 </html>
