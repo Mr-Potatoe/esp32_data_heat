@@ -206,7 +206,7 @@ th {
         <h2>Sensor Data View</h2>
                     <!-- Legend -->
                     <div class="legend">
-                <div><div class="legend-color normal"></div>Not Hazardous (&lt;27°C)</div>
+                <div><div class="legend-color normal"></div>Normal (&lt;27°C)</div>
                 <div><div class="legend-color caution"></div>Caution (27°C - 32°C)</div>
                 <div><div class="legend-color extreme-caution"></div>Extreme Caution (32°C - 41°C)</div>
                 <div><div class="legend-color danger"></div>Danger (41°C - 54°C)</div>
@@ -264,7 +264,7 @@ function getAlertClass($heatIndex) {
             <tr class="<?= getAlertClass($row['heat_index']) ?>">
                 <td><?= htmlspecialchars($row['sensor_id']) ?></td>
                 <td><?= htmlspecialchars($row['location_name']) ?></td>
-                <td><?= htmlspecialchars($row['temperature']) ?></td>
+                <td><?= htmlspecialchars(string: $row['temperature']) ?></td>
                 <td><?= htmlspecialchars($row['humidity']) ?></td>
                 <td><?= htmlspecialchars($row['heat_index']) ?></td>
                 <td><?= htmlspecialchars($row['alert']) ?></td>
@@ -288,14 +288,35 @@ function getAlertClass($heatIndex) {
 
         <!-- Pagination -->
         <nav class="pagination">
-            <a class="page-link <?= ($currentPage <= 1) ? 'disabled' : '' ?>" href="?page=<?= $currentPage - 1 ?>&location_name=<?= $selectedLocation ?>">Previous</a>
-            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                <span class="page-item <?= ($currentPage == $i) ? 'active' : '' ?>">
-                    <a class="page-link" href="?page=<?= $i ?>&location_name=<?= $selectedLocation ?>"><?= $i ?></a>
-                </span>
-            <?php endfor; ?>
-            <a class="page-link <?= ($currentPage >= $totalPages) ? 'disabled' : '' ?>" href="?page=<?= $currentPage + 1 ?>&location_name=<?= $selectedLocation ?>">Next</a>
-        </nav>
+    <!-- Previous button -->
+    <a class="page-link <?= ($currentPage <= 1) ? 'disabled' : '' ?>" href="?page=<?= $currentPage - 1 ?>&location_name=<?= $selectedLocation ?>">Previous</a>
+
+    <?php
+    // Define how many page links to display on each side of the current page
+    $range = 2;
+
+    // Determine the start and end page numbers
+    $startPage = max(1, $currentPage - $range);
+    $endPage = min($totalPages, $currentPage + $range);
+
+    // Display page links within the range
+    for ($i = $startPage; $i <= $endPage; $i++): ?>
+        <span class="page-item <?= ($currentPage == $i) ? 'active' : '' ?>">
+            <a class="page-link" href="?page=<?= $i ?>&location_name=<?= $selectedLocation ?>"><?= $i ?></a>
+        </span>
+    <?php endfor; ?>
+
+    <!-- Next button -->
+    <a class="page-link <?= ($currentPage >= $totalPages) ? 'disabled' : '' ?>" href="?page=<?= $currentPage + 1 ?>&location_name=<?= $selectedLocation ?>">Next</a>
+</nav>
+
+<!-- Total pages label -->
+<div class="total-pages-label" style="text-align: center; margin-top: 10px;">
+    <strong>Page <?= $currentPage ?> of <?= $totalPages ?></strong>
+</div>
+
+
+
     </div>
     </main>
 

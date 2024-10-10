@@ -166,7 +166,7 @@ th {
                         // Function to determine the background color class based on the heat index
 function getAlertClass($heatIndex) {
     if ($heatIndex < 27) {
-        return 'normal'; // Changed from 'Not Hazardous' to 'normal'
+        return 'normal'; // Changed from 'Normal' to 'normal'
     } elseif ($heatIndex >= 27 && $heatIndex < 32) {
         return 'caution';
     } elseif ($heatIndex >= 32 && $heatIndex < 41) {
@@ -207,27 +207,81 @@ if ($result->num_rows > 0) {
 
                 </table>
 
+                <!-- Pagination -->
+                <nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        <!-- Previous button -->
+        <li class="page-item <?php if($page <= 1){ echo 'disabled'; } ?>">
+            <a class="page-link" href="?page=<?php echo $page - 1; ?>" aria-label="Previous">
+                Previous
+            </a>
+        </li>
 
-            <!-- Pagination -->
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item <?php if($page <= 1){ echo 'disabled'; } ?>">
-                        <a class="page-link" href="?page=<?php echo $page - 1; ?>" aria-label="Previous">
-                            <span aria-hidden="true">&laquo;</span>
-                        </a>
-                    </li>
-                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                        <li class="page-item <?php if($page == $i){ echo 'active'; } ?>">
-                            <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                        </li>
-                    <?php endfor; ?>
-                    <li class="page-item <?php if($page >= $totalPages){ echo 'disabled'; } ?>">
-                        <a class="page-link" href="?page=<?php echo $page + 1; ?>" aria-label="Next">
-                            <span aria-hidden="true">&raquo;</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
+        <?php
+        // Define the range of pages to display
+        $range = 2;
+
+        // Calculate start and end page numbers
+        $startPage = max(1, $page - $range);
+        $endPage = min($totalPages, $page + $range);
+
+        // Loop through the pages within the range
+        for ($i = $startPage; $i <= $endPage; $i++): ?>
+            <li class="page-item <?php if($page == $i){ echo 'active'; } ?>">
+                <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+            </li>
+        <?php endfor; ?>
+
+        <!-- Next button -->
+        <li class="page-item <?php if($page >= $totalPages){ echo 'disabled'; } ?>">
+            <a class="page-link" href="?page=<?php echo $page + 1; ?>" aria-label="Next">
+                Next
+            </a>
+        </li>
+    </ul>
+</nav>
+
+<!-- Total pages label -->
+<div class="total-pages-label text-center mt-2">
+    <strong>Page <?php echo $page; ?> of <?php echo $totalPages; ?></strong>
+</div>
+
+<style>
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+
+    .pagination .page-link {
+        padding: 8px 12px;
+        border: 1px solid #007bff;
+        border-radius: 4px;
+        color: #007bff;
+        text-decoration: none;
+        margin: 0 5px; /* Add margin for spacing */
+    }
+
+    .pagination .page-link:hover {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .pagination .disabled .page-link {
+        pointer-events: none;
+        background-color: #e9ecef;
+        color: #6c757d;
+        border-color: #dee2e6;
+    }
+
+    .total-pages-label {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #333;
+    }
+</style>
+
+
         </div>
     </main>
 

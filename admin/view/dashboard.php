@@ -4,27 +4,44 @@ require '../../config.php'; // Configuration and database connection
 loadEnv(); // Load environment variables
 $conn = dbConnect(); // Connect to the database
 
-// Fetch sensor readings grouped by location
+// Define how many charts to show per page
+$chartsPerPage = 2; // Adjust this value to control the number of charts displayed per page
+
+// Get the current page from the URL, default to 1 if not set
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $chartsPerPage;
+
+// Query to get total number of locations
+$totalLocationsQuery = "SELECT COUNT(DISTINCT location_name) AS total_locations FROM sensor_readings";
+$totalLocationsResult = $conn->query($totalLocationsQuery);
+$totalLocations = $totalLocationsResult->fetch_assoc()['total_locations'];
+
+// Calculate the total number of pages
+$totalPages = ceil($totalLocations / $chartsPerPage);
+
+// Fetch sensor readings grouped by location with pagination
 $query = "SELECT location_name, AVG(temperature) AS avg_temperature, AVG(humidity) AS avg_humidity, AVG(heat_index) AS avg_heat_index
           FROM sensor_readings
           GROUP BY location_name
-          ORDER BY location_name";
+          ORDER BY location_name
+          LIMIT $chartsPerPage OFFSET $offset"; // Limit the query for pagination
 $result = $conn->query($query);
 
-// Prepare data for the charts
+// Prepare data for charts
 $locations = [];
 $avgTemperatures = [];
 $avgHumidity = [];
-$avgHeatIndexes = []; // For average heat index
+$avgHeatIndexes = [];
 
 if ($result->num_rows > 0) {
     while($row = $result->fetch_assoc()) {
         $locations[] = htmlspecialchars($row['location_name']);
         $avgTemperatures[] = floatval($row['avg_temperature']);
         $avgHumidity[] = floatval($row['avg_humidity']);
-        $avgHeatIndexes[] = floatval($row['avg_heat_index']); // Store avg heat index
+        $avgHeatIndexes[] = floatval($row['avg_heat_index']);
     }
 }
+
 
 // Fetch time series data based on the selected interval (default: daily)
 $interval = isset($_GET['interval']) ? $_GET['interval'] : 'hour';
@@ -79,6 +96,12 @@ if ($result_time_series->num_rows > 0) {
     }
 }
 
+// Add this check to display a message if no data is available
+if (empty($locations)) {
+    $noDataMessage = "No data available for the selected time interval.";
+} else {
+    $noDataMessage = "";
+}
 ?>
 
 <!DOCTYPE html>
@@ -112,147 +135,185 @@ if ($result_time_series->num_rows > 0) {
             </select>
         </div>
 
-        <!-- Individual Bar and Line Charts for Each Location -->
-        <div id="charts" class="row">
-            <?php foreach ($locations as $index => $locationName): ?>
-                <div class="col-lg-6 col-md-12 mb-4"> <!-- Adjusted column size for two charts in a row -->
-                    <div class="card shadow-sm rounded">
-                        <div class="card-body">
-                            <h4><?php echo htmlspecialchars($locationName); ?> Average Readings</h4>
-                            <canvas id="barChart_<?php echo $index; ?>"></canvas>
-                        </div>
-                    </div>
+        <!-- Check if there are no locations and display the message -->
+<?php if (!empty($noDataMessage)): ?>
+    <div class="alert alert-warning" role="alert">
+        <?php echo $noDataMessage; ?>
+    </div>
+<?php endif; ?>
+
+
+      <!-- Individual Bar and Line Charts for Each Location -->
+<div id="charts" class="row">
+    <?php foreach ($locations as $index => $locationName): ?>
+        <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card shadow-sm rounded">
+                <div class="card-body">
+                    <h4><?php echo htmlspecialchars($locationName); ?> Average Readings</h4>
+                    <canvas id="barChart_<?php echo $index; ?>"></canvas>
                 </div>
+            </div>
+        </div>
 
-                <div class="col-lg-6 col-md-12 mb-4"> <!-- Adjusted column size for two charts in a row -->
-                    <div class="card shadow-sm rounded">
-                        <div class="card-body">
-                            <h4><?php echo htmlspecialchars($locationName); ?> Trends</h4>
-                            <canvas id="lineChart_<?php echo $index; ?>"></canvas>
-                        </div>
-                    </div>
+        <div class="col-lg-6 col-md-12 mb-4">
+            <div class="card shadow-sm rounded">
+                <div class="card-body">
+                    <h4><?php echo htmlspecialchars($locationName); ?> Trends</h4>
+                    <canvas id="lineChart_<?php echo $index; ?>"></canvas>
                 </div>
+            </div>
+        </div>
 
-                <script>
-                    // Prepare data for individual bar charts
-                    (function(index, locationName) { // Pass both index and locationName
-                        const avgTemperature = <?php echo json_encode($avgTemperatures[$index] ?? 0); ?>; // Default to 0 if undefined
-                        const avgHumidity = <?php echo json_encode($avgHumidity[$index] ?? 0); ?>; // Default to 0 if undefined
-                        const avgHeatIndex = <?php echo json_encode($avgHeatIndexes[$index] ?? 0); ?>; // Default to 0 if undefined
+        <script>
+            // Bar Chart Rendering
+            (function(index, locationName) {
+                const avgTemperature = <?php echo json_encode($avgTemperatures[$index] ?? 0); ?>;
+                const avgHumidity = <?php echo json_encode($avgHumidity[$index] ?? 0); ?>;
+                const avgHeatIndex = <?php echo json_encode($avgHeatIndexes[$index] ?? 0); ?>;
 
-                        const ctxBar = document.getElementById(`barChart_${index}`).getContext('2d');
-                        new Chart(ctxBar, {
-                            type: 'bar',
-                            data: {
-                                labels: ['Average Temperature (°C)', 'Average Humidity (%)', 'Average Heat Index'],
-                                datasets: [{
-                                    label: '<?php echo htmlspecialchars($locationName); ?>', // Use locationName here
-                                    data: [avgTemperature, avgHumidity, avgHeatIndex],
-                                    backgroundColor: [
-                                        'rgba(255, 99, 132, 0.2)',
-                                        'rgba(54, 162, 235, 0.2)',
-                                        'rgba(255, 206, 86, 0.2)'
-                                    ],
-                                    borderColor: [
-                                        'rgba(255, 99, 132, 1)',
-                                        'rgba(54, 162, 235, 1)',
-                                        'rgba(255, 206, 86, 1)'
-                                    ],
-                                    borderWidth: 1,
-                                }]
+                const ctxBar = document.getElementById(`barChart_${index}`).getContext('2d');
+                new Chart(ctxBar, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Average Temperature (°C)', 'Average Humidity (%)', 'Average Heat Index'],
+                        datasets: [{
+                            label: locationName,
+                            data: [avgTemperature, avgHumidity, avgHeatIndex],
+                            backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)', 'rgba(255, 206, 86, 0.2)'],
+                            borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)'],
+                            borderWidth: 1,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: `Average Readings for ${locationName}` }
+                        }
+                    }
+                });
+            })(<?php echo $index; ?>, '<?php echo addslashes($locationName); ?>');
+
+            // Line Chart Rendering
+            
+            (function(index, locationName) {
+                const data = <?php echo json_encode($locationData[$locationName]); ?>;
+
+                const ctxLine = document.getElementById(`lineChart_${index}`).getContext('2d');
+                new Chart(ctxLine, {
+                    type: 'line',
+                    data: {
+                        labels: data.timeLabels, // Ensure labels are available but optimized in the options
+                        datasets: [
+                            { 
+                                label: 'Average Temperature (°C)',
+                                data: data.avgTemperatures,
+                                fill: false,
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                tension: 0.1,
+                                pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                                pointBorderColor: '#fff'
                             },
-                            options: {
-                                responsive: true,
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                    }
+                            { 
+                                label: 'Average Humidity (%)',
+                                data: data.avgHumidity,
+                                fill: false,
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                tension: 0.1,
+                                pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                                pointBorderColor: '#fff'
+                            },
+                            { 
+                                label: 'Average Heat Index',
+                                data: data.avgHeatIndexes,
+                                fill: false,
+                                borderColor: 'rgba(255, 206, 86, 1)',
+                                backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                                tension: 0.1,
+                                pointBackgroundColor: 'rgba(255, 206, 86, 1)',
+                                pointBorderColor: '#fff'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: {
+                                ticks: {
+                                    autoSkip: true,               // Automatically skip labels
+                                    maxTicksLimit: 8,             // Limit the number of labels
+                                    maxRotation: 0,               // Prevent label rotation unless necessary
+                                    minRotation: 0                // Keep it flat for better readability
                                 },
-                                plugins: {
-                                    legend: {
-                                        display: false,
-                                    },
-                                    title: {
-                                        display: true,
-                                        text: `Average Readings for ${<?php echo json_encode($locationName); ?>}`,
-                                    }
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(200, 200, 200, 0.2)' // Subtle gridlines
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(200, 200, 200, 0.2)'
                                 }
                             }
-                        });
-                    })(<?php echo $index; ?>, '<?php echo addslashes($locationName); ?>'); // Immediately Invoked Function Expression (IIFE)
-
-                    // Prepare line charts for each location
-                    (function(index, locationName) { // Create an IIFE for the line chart
-                        const data = <?php echo json_encode($locationData[$locationName]); ?>; // Moved inside the function
-
-                        const ctxLine = document.getElementById(`lineChart_${index}`).getContext('2d');
-                        // In the line chart configuration, modify the options to improve X-axis labels
-new Chart(ctxLine, {
-    type: 'line',
-    data: {
-        labels: data.timeLabels,
-        datasets: [
-            {
-                label: 'Average Temperature (°C)',
-                data: data.avgTemperatures,
-                fill: false,
-                borderColor: 'rgba(255, 99, 132, 1)',
-                tension: 0.1
-            },
-            {
-                label: 'Average Humidity (%)',
-                data: data.avgHumidity,
-                fill: false,
-                borderColor: 'rgba(54, 162, 235, 1)',
-                tension: 0.1
-            },
-            {
-                label: 'Average Heat Index',
-                data: data.avgHeatIndexes,
-                fill: false,
-                borderColor: 'rgba(255, 206, 86, 1)',
-                tension: 0.1
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            x: {
-                ticks: {
-                    autoSkip: true, // Skip some labels for better spacing
-                    maxTicksLimit: 10, // Limit the number of ticks
-                    rotation: 45, // Rotate labels for better readability
-                    callback: function(value, index, values) {
-                        // Custom formatting based on interval
-                        if (interval === 'day') {
-                            return value.substring(5); // Show MM-DD format
+                        },
+                        plugins: {
+                            legend: { display: true },
+                            title: { display: true, text: `Trends for ${locationName}` }
+                        },
+                        elements: {
+                            point: {
+                                radius: 5,
+                                hoverRadius: 8
+                            }
                         }
-                        return value; // Default display
                     }
-                }
-            },
-            y: {
-                beginAtZero: true,
-            }
-        },
-        plugins: {
-            legend: {
-                position: 'top',
-            },
-            title: {
-                display: true,
-                text: `Trends for ${locationName}`,
-            }
-        }
-    }
-});
+                });
+            })(<?php echo $index; ?>, '<?php echo addslashes($locationName); ?>');
+        
+        </script>
+    <?php endforeach; ?>
+</div>
 
-                    })(<?php echo $index; ?>, '<?php echo addslashes($locationName); ?>'); // IIFE for line chart
-                </script>
+        <!-- Pagination Links -->
+<div class="d-flex justify-content-between align-items-center mt-4">
+    <div>
+        <!-- Previous Page Link -->
+        <?php if ($page > 1): ?>
+            <a href="?page=<?= $page - 1 ?>&interval=<?= $interval ?>" class="btn btn-outline-primary">
+                <i class="bi bi-chevron-left"></i> Previous
+            </a>
+        <?php else: ?>
+            <button class="btn btn-outline-secondary" disabled>
+                <i class="bi bi-chevron-left"></i> Previous
+            </button>
+        <?php endif; ?>
+    </div>
 
-            <?php endforeach; ?>
-        </div>
+    <div>
+        Page <?= $page ?> of <?= $totalPages ?>
+    </div>
+
+    <div>
+        <!-- Next Page Link -->
+        <?php if ($page < $totalPages): ?>
+            <a href="?page=<?= $page + 1 ?>&interval=<?= $interval ?>" class="btn btn-outline-primary">
+                Next <i class="bi bi-chevron-right"></i>
+            </a>
+        <?php else: ?>
+            <button class="btn btn-outline-secondary" disabled>
+                Next <i class="bi bi-chevron-right"></i>
+            </button>
+        <?php endif; ?>
+    </div>
+</div>
+
 
     </div>
     </main>

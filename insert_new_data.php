@@ -4,10 +4,10 @@ loadEnv(); // Load environment variables
 $conn = dbConnect(); // Connect to the database
 
 // Define the new location parameters
-$sensor_id = 7; // Use the sensor_id assigned above
-$latitude = 7.844664;
-$longitude = 123.784432;
-$location_name = 'Canteen';
+$sensor_id = 13; // Use the sensor_id assigned above
+$latitude = 7.956327;
+$longitude = 123.883421;
+$location_name = 'Pluto';
 
 // Prepare to insert data for the last 24 hours
 $currentTime = new DateTime(); // Get the current time

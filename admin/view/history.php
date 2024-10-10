@@ -8,12 +8,26 @@ loadEnv();
 // Connect to the database
 $conn = dbConnect();
 
+// Pagination variables
+$locationsPerPage = 2; // Number of location tables per page
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1; // Current page number
+$offset = ($page - 1) * $locationsPerPage; // Calculate offset
+
+// Get the total number of locations
+$totalLocationsQuery = "SELECT COUNT(DISTINCT location_name) AS total_locations FROM sensor_readings";
+$totalLocationsResult = $conn->query($totalLocationsQuery);
+$totalLocationsRow = $totalLocationsResult->fetch_assoc();
+$totalLocations = $totalLocationsRow['total_locations'];
+
+// Calculate total number of pages
+$totalPages = ceil($totalLocations / $locationsPerPage);
+
+// Fetch the current page's locations with pagination
+$locationsQuery = "SELECT DISTINCT location_name FROM sensor_readings LIMIT $locationsPerPage OFFSET $offset";
+$locationsResult = $conn->query($locationsQuery);
+
 // Get the filter type from the dropdown (hourly, daily, etc.)
 $filterType = isset($_GET['filter']) ? $_GET['filter'] : 'hourly';
-
-// Fetch all distinct locations
-$locationsQuery = "SELECT DISTINCT location_name FROM sensor_readings";
-$locationsResult = $conn->query($locationsQuery);
 
 // Modify the SQL query to use alert_time instead of timestamp
 $sql = "
@@ -37,8 +51,6 @@ $stmt->bind_param("sssss", $filterType, $filterType, $filterType, $filterType, $
 $stmt->execute();
 $result = $stmt->get_result();
 
-
-
 // Function to determine the background color class based on the heat index
 function getAlertClass($heatIndex) {
     if ($heatIndex < 27) {
@@ -54,9 +66,6 @@ function getAlertClass($heatIndex) {
     }
 }
 
-?>
-
-<?php
 // Helper function to format the period column in a more human-readable way
 function formatPeriod($period, $filterType) {
     $date = new DateTime($period);
@@ -78,18 +87,13 @@ function formatPeriod($period, $filterType) {
 }
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <?php include '../components/head.php'; ?>
-    
 
 <style>
-
-    
-
 .container {
     max-width: 1200px;
     margin: 20px auto;
@@ -134,7 +138,6 @@ th {
     background-color: #f4f4f4;
     color: #555;
 }
-
 
 .normal {
     background-color: #e5e5e5;
@@ -193,9 +196,9 @@ th {
         font-size: 20px; /* Adjust subheading size */
     }
 }
-
-    </style>
+</style>
 </head>
+
 <body>
     <!-- ======= Header ======= -->
     <?php include '../components/header.php'; ?>
@@ -219,9 +222,9 @@ th {
                 </select>
             </form>
 
-              <!-- Legend -->
-              <div class="legend">
-                <div><div class="legend-color normal"></div>Not Hazardous (&lt;27°C)</div>
+            <!-- Legend -->
+            <div class="legend">
+                <div><div class="legend-color normal"></div>Normal (&lt;27°C)</div>
                 <div><div class="legend-color caution"></div>Caution (27°C - 32°C)</div>
                 <div><div class="legend-color extreme-caution"></div>Extreme Caution (32°C - 41°C)</div>
                 <div><div class="legend-color danger"></div>Danger (41°C - 54°C)</div>
@@ -244,53 +247,72 @@ th {
                             </tr>
                         </thead>
                         <tbody>
-    <?php
-    // Reset result pointer and loop through data to display only for the current location
-    $result->data_seek(0);
-    $locationName = $locationRow['location_name'];
-    $hasData = false; // To check if the current location has any data
-    
-    while ($row = $result->fetch_assoc()) {
-        if ($row['location_name'] == $locationName) {
-            $hasData = true;
-            $alertClass = getAlertClass($row['avg_heat_index']);
-            $formattedPeriod = formatPeriod($row['period'], $filterType); // Format the period
-            echo "<tr class='{$alertClass}'>";
-            echo "<td>{$formattedPeriod}</td>"; // Output the formatted period
-            echo "<td>{$row['avg_temp']}</td>";
-            echo "<td>{$row['avg_humidity']}</td>";
-            echo "<td>{$row['avg_heat_index']}</td>";
-            echo "<td>" . ucfirst(str_replace('-', ' ', $alertClass)) . "</td>";
-            echo "</tr>";
-        }
-    }
-    
-    // If no data is available for the location
-    if (!$hasData) {
-        echo "<tr><td colspan='5'>No data available for this location.</td></tr>";
-    }
-    ?>
-</tbody>
-
+                            <?php
+                            // Reset result pointer and loop through data to display only for the current location
+                            $result->data_seek(0);
+                            $locationName = $locationRow['location_name'];
+                            while ($row = $result->fetch_assoc()) {
+                                if ($row['location_name'] == $locationName) {
+                                    $alertClass = getAlertClass($row['avg_heat_index']);
+                                    ?>
+                                    <tr class="<?= $alertClass ?>">
+                                        <td><?= formatPeriod($row['period'], $filterType) ?></td>
+                                        <td><?= number_format($row['avg_temp'], 2) ?></td>
+                                        <td><?= number_format($row['avg_humidity'], 2) ?></td>
+                                        <td><?= number_format($row['avg_heat_index'], 2) ?></td>
+                                        <td><?= ucfirst(str_replace('-', ' ', $alertClass)) ?></td>
+                                    </tr>
+                                    <?php
+                                }
+                            }
+                            ?>
+                        </tbody>
                     </table>
                 <?php endwhile; ?>
             <?php else: ?>
                 <p>No locations found.</p>
             <?php endif; ?>
 
-          
-        </div>
-    </main>
+         <!-- Pagination Links -->
+<div class="d-flex justify-content-between align-items-center mt-4">
+    <div>
+        <!-- Previous Page Link -->
+        <?php if ($page > 1): ?>
+            <a href="?page=<?= $page - 1 ?>&filter=<?= $filterType ?>" class="btn btn-outline-primary">
+                <i class="bi bi-chevron-left"></i> Previous
+            </a>
+        <?php else: ?>
+            <button class="btn btn-outline-secondary" disabled>
+                <i class="bi bi-chevron-left"></i> Previous
+            </button>
+        <?php endif; ?>
+    </div>
 
-   <!-- footer and scroll to top -->
-   <?php include '../components/footer.php'; ?>
-    <!-- include scripts -->
+    <div>
+        <span>Page <?= $page ?> of <?= $totalPages ?></span>
+    </div>
+
+    <div>
+        <!-- Next Page Link -->
+        <?php if ($page < $totalPages): ?>
+            <a href="?page=<?= $page + 1 ?>&filter=<?= $filterType ?>" class="btn btn-outline-primary">
+                Next <i class="bi bi-chevron-right"></i>
+            </a>
+        <?php else: ?>
+            <button class="btn btn-outline-secondary" disabled>
+                Next <i class="bi bi-chevron-right"></i>
+            </button>
+        <?php endif; ?>
+    </div>
+</div>
+
+
+        </div>
+    </main><!-- End #main -->
+
+    <!-- ======= Footer ======= -->
+    <?php include '../components/footer.php'; ?>
     <?php include '../components/scripts.php'; ?>
 </body>
+
 </html>
-
-<?php
-// Close the database connection
-$conn->close();
-?>
-
