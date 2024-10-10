@@ -271,7 +271,7 @@ function getAlertClass($heatIndex) {
                 <td>
                     <?php
                         $date = new DateTime($row['alert_time']);
-                        echo $date->format('F j, Y g:i A'); // Example: October 10, 2024 03:45 PM
+                        echo $date->format('F j, Y g:i:s A'); // Example: October 10, 2024 03:45 PM
                     ?>
                 </td>
 
