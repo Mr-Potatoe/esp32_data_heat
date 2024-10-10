@@ -27,7 +27,7 @@ if ($result->num_rows > 0) {
 }
 
 // Fetch time series data based on the selected interval (default: daily)
-$interval = isset($_GET['interval']) ? $_GET['interval'] : 'day';
+$interval = isset($_GET['interval']) ? $_GET['interval'] : 'hour';
 $interval_query = "";
 
 switch ($interval) {

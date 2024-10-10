@@ -56,13 +56,39 @@ function getAlertClass($heatIndex) {
 
 ?>
 
+<?php
+// Helper function to format the period column in a more human-readable way
+function formatPeriod($period, $filterType) {
+    $date = new DateTime($period);
+    
+    switch ($filterType) {
+        case 'hourly':
+            return $date->format('F j, Y, g A'); // Example: January 1, 2024, 1 PM
+        case 'daily':
+            return $date->format('F j, Y'); // Example: January 1, 2024
+        case 'weekly':
+            return 'Week ' . $date->format('W, Y'); // Example: Week 1, 2024
+        case 'monthly':
+            return $date->format('F Y'); // Example: January 2024
+        case 'yearly':
+            return $date->format('Y'); // Example: 2024
+        default:
+            return $period;
+    }
+}
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <?php include '../components/head.php'; ?>
     
+
 <style>
+
+    
 
 .container {
     max-width: 1200px;
@@ -111,7 +137,7 @@ th {
 
 
 .normal {
-    background-color: #ffffff;
+    background-color: #e5e5e5;
 }
 
 .caution {
@@ -193,6 +219,15 @@ th {
                 </select>
             </form>
 
+              <!-- Legend -->
+              <div class="legend">
+                <div><div class="legend-color normal"></div>Not Hazardous (&lt;27°C)</div>
+                <div><div class="legend-color caution"></div>Caution (27°C - 32°C)</div>
+                <div><div class="legend-color extreme-caution"></div>Extreme Caution (32°C - 41°C)</div>
+                <div><div class="legend-color danger"></div>Danger (41°C - 54°C)</div>
+                <div><div class="legend-color extreme-danger"></div>Extreme Danger (&gt;54°C)</div>
+            </div>
+
             <!-- Loop through each location and generate a table for each -->
             <?php if ($locationsResult && $locationsResult->num_rows > 0): ?>
                 <?php while ($locationRow = $locationsResult->fetch_assoc()): ?>
@@ -209,46 +244,41 @@ th {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php
-                            // Reset result pointer and loop through data to display only for the current location
-                            $result->data_seek(0);
-                            $locationName = $locationRow['location_name'];
-                            $hasData = false; // To check if the current location has any data
-                            
-                            while ($row = $result->fetch_assoc()) {
-                                if ($row['location_name'] == $locationName) {
-                                    $hasData = true;
-                                    $alertClass = getAlertClass($row['avg_heat_index']);
-                                    echo "<tr class='{$alertClass}'>";
-                                    echo "<td>{$row['period']}</td>";
-                                    echo "<td>{$row['avg_temp']}</td>";
-                                    echo "<td>{$row['avg_humidity']}</td>";
-                                    echo "<td>{$row['avg_heat_index']}</td>";
-                                    echo "<td>" . ucfirst(str_replace('-', ' ', $alertClass)) . "</td>";
-                                    echo "</tr>";
-                                }
-                            }
-                            
-                            // If no data is available for the location
-                            if (!$hasData) {
-                                echo "<tr><td colspan='5'>No data available for this location.</td></tr>";
-                            }
-                            ?>
-                        </tbody>
+    <?php
+    // Reset result pointer and loop through data to display only for the current location
+    $result->data_seek(0);
+    $locationName = $locationRow['location_name'];
+    $hasData = false; // To check if the current location has any data
+    
+    while ($row = $result->fetch_assoc()) {
+        if ($row['location_name'] == $locationName) {
+            $hasData = true;
+            $alertClass = getAlertClass($row['avg_heat_index']);
+            $formattedPeriod = formatPeriod($row['period'], $filterType); // Format the period
+            echo "<tr class='{$alertClass}'>";
+            echo "<td>{$formattedPeriod}</td>"; // Output the formatted period
+            echo "<td>{$row['avg_temp']}</td>";
+            echo "<td>{$row['avg_humidity']}</td>";
+            echo "<td>{$row['avg_heat_index']}</td>";
+            echo "<td>" . ucfirst(str_replace('-', ' ', $alertClass)) . "</td>";
+            echo "</tr>";
+        }
+    }
+    
+    // If no data is available for the location
+    if (!$hasData) {
+        echo "<tr><td colspan='5'>No data available for this location.</td></tr>";
+    }
+    ?>
+</tbody>
+
                     </table>
                 <?php endwhile; ?>
             <?php else: ?>
                 <p>No locations found.</p>
             <?php endif; ?>
 
-            <!-- Legend -->
-            <div class="legend">
-                <div><div class="legend-color normal"></div>Normal (&lt;27°C)</div>
-                <div><div class="legend-color caution"></div>Caution (27°C - 32°C)</div>
-                <div><div class="legend-color extreme-caution"></div>Extreme Caution (32°C - 41°C)</div>
-                <div><div class="legend-color danger"></div>Danger (41°C - 54°C)</div>
-                <div><div class="legend-color extreme-danger"></div>Extreme Danger (&gt;54°C)</div>
-            </div>
+          
         </div>
     </main>
 

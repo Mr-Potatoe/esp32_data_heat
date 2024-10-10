@@ -110,7 +110,7 @@ th {
 
 
 .normal {
-    background-color: #ffffff; /* Normal */
+    background-color: #e5e5e5; /* Darker Light Gray */
 }
 
 .caution {
@@ -206,7 +206,7 @@ th {
         <h2>Sensor Data View</h2>
                     <!-- Legend -->
                     <div class="legend">
-                <div><div class="legend-color normal"></div>Normal (&lt;27°C)</div>
+                <div><div class="legend-color normal"></div>Not Hazardous (&lt;27°C)</div>
                 <div><div class="legend-color caution"></div>Caution (27°C - 32°C)</div>
                 <div><div class="legend-color extreme-caution"></div>Extreme Caution (32°C - 41°C)</div>
                 <div><div class="legend-color danger"></div>Danger (41°C - 54°C)</div>
@@ -230,15 +230,15 @@ th {
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <!-- <th>ID</th> -->
                     <th>Sensor ID</th>
                     <th>Location Name</th> <!-- New column for location -->
                     <th>Temperature (°C)</th>
                     <th>Humidity (%)</th>
                     <th>Heat Index</th>
                     <th>Alert Level</th>
-                    <th>Latitude</th>
-                    <th>Longitude</th>
+                    <!-- <th>Latitude</th>
+                    <th>Longitude</th> -->
                     <th>Alert Time</th>
                 </tr>
             </thead>
@@ -262,16 +262,19 @@ function getAlertClass($heatIndex) {
     <?php if ($result->num_rows > 0): ?>
         <?php while ($row = $result->fetch_assoc()): ?>
             <tr class="<?= getAlertClass($row['heat_index']) ?>">
-                <td><?= htmlspecialchars($row['id']) ?></td>
                 <td><?= htmlspecialchars($row['sensor_id']) ?></td>
                 <td><?= htmlspecialchars($row['location_name']) ?></td>
                 <td><?= htmlspecialchars($row['temperature']) ?></td>
                 <td><?= htmlspecialchars($row['humidity']) ?></td>
                 <td><?= htmlspecialchars($row['heat_index']) ?></td>
                 <td><?= htmlspecialchars($row['alert']) ?></td>
-                <td><?= htmlspecialchars($row['latitude']) ?></td>
-                <td><?= htmlspecialchars($row['longitude']) ?></td>
-                <td><?= htmlspecialchars($row['alert_time']) ?></td>
+                <td>
+                    <?php
+                        $date = new DateTime($row['alert_time']);
+                        echo $date->format('F j, Y g:i A'); // Example: October 10, 2024 03:45 PM
+                    ?>
+                </td>
+
             </tr>
         <?php endwhile; ?>
     <?php else: ?>
