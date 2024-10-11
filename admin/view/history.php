@@ -44,7 +44,7 @@ $sql = "
            AVG(heat_index) AS avg_heat_index
     FROM sensor_readings
     GROUP BY location_name, period
-    ORDER BY location_name, period";
+    ORDER BY location_name, period DESC";
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("sssss", $filterType, $filterType, $filterType, $filterType, $filterType);
@@ -140,23 +140,23 @@ th {
 }
 
 .normal {
-    background-color: #e5e5e5;
+    background-color: #E6E6E6;
 }
 
 .caution {
-    background-color: #ffff99; /* Light Yellow */
+    background-color: #FFFF00; /* Light Yellow */
 }
 
 .extreme-caution {
-    background-color: #ffcc99; /* Light Orange */
+    background-color: #FFCC00; /* Light Orange */
 }
 
 .danger {
-    background-color: #ff9999; /* Light Red */
+    background-color: #FF6600; /* Light Red */
 }
 
 .extreme-danger {
-    background-color: #ff6666; /* Darker Red */
+    background-color: #CC0001; /* Darker Red */
 }
 
 .legend {
