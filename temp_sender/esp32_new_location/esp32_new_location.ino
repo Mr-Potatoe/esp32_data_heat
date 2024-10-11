@@ -4,21 +4,21 @@
 #include <DHT.h>
 
 // WiFi credentials
-const char *ssid = "Mr.Potatoe";
-const char *password = "passwordno";
+const char *ssid = "FTTH 5G";
+const char *password = "Slark123";
 
 // Server URL
-const char *serverUrl = "http://192.168.200.111/esp32_data_heat/insert_data.php";  // Replace with your XAMPP server IP
+const char *serverUrl = "http://192.168.1.45/esp32_data_heat/insert_data.php";  // Replace with your XAMPP server IP
 
 DHT dht(26, DHT11);
 
 // Sensor coordinates (Latitude, Longitude)
-const char *sensorLatitude = "7.952062";    // Replace with actual latitude
-const char *sensorLongitude = "123.521546"; // Replace with actual longitude
+const char *sensorLatitude = "7.952333";    // Replace with actual latitude
+const char *sensorLongitude = "123.521333"; // Replace with actual longitude
 const int sensor_id = 2; // Define your sensor ID (it can be any unique number)
 
 // Sensor location name
-const char *sensorLocationName = "Main Campus"; // Add the location name here
+const char *sensorLocationName = "Venus"; // Add the location name here
 
 void setup() {
   Serial.begin(115200);

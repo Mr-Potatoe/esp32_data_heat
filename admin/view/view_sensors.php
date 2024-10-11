@@ -63,12 +63,17 @@ if ($endDate) {
 $sql .= " ORDER BY alert_time DESC LIMIT ?, ?"; // Add ORDER BY alert_time DESC
 
 // Prepare the statement
-// Prepare the statement
 $stmt = $conn->prepare($sql);
 $types = str_repeat("s", count($params)); // Determine parameter types
 if ($params) {
     $types .= "ii"; // Adding start limit and results per page as integers
-    $stmt->bind_param($types, ...array_merge($params, [$startLimit, $resultsPerPage]));
+ // Combine pagination parameters with existing parameters
+ $paginationParams = [$startLimit, $resultsPerPage];
+ $allParams = array_merge($params, $paginationParams);
+ 
+ // Bind parameters to statement
+ $stmt->bind_param($types, ...$allParams);
+ 
 } else {
     $stmt->bind_param("ii", $startLimit, $resultsPerPage); // Binding start limit and results per page as integers
 }
