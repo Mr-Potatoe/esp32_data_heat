@@ -29,7 +29,12 @@ $locationsResult = $conn->query($locationsQuery);
 // Get the filter type from the dropdown (hourly, daily, etc.)
 $filterType = isset($_GET['filter']) ? $_GET['filter'] : 'hourly';
 
-// Modify the SQL query to use alert_time instead of timestamp
+// Get the start and end date from the form
+$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : '';
+$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
+
+
+// Prepare the SQL query to use alert_time instead of timestamp with date range
 $sql = "
     SELECT location_name, 
            CASE 
@@ -43,13 +48,18 @@ $sql = "
            AVG(humidity) AS avg_humidity, 
            AVG(heat_index) AS avg_heat_index
     FROM sensor_readings
+    WHERE alert_time >= ? AND alert_time <= ?
     GROUP BY location_name, period
     ORDER BY location_name, period DESC";
 
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("sssss", $filterType, $filterType, $filterType, $filterType, $filterType);
+
+// Bind all parameters (5 for filterType and 2 for startDate and endDate)
+$stmt->bind_param("sssssss", $filterType, $filterType, $filterType, $filterType, $filterType, $startDate, $endDate);
 $stmt->execute();
 $result = $stmt->get_result();
+
+
 
 // Function to determine the background color class based on the heat index
 function getAlertClass($heatIndex) {
@@ -92,8 +102,7 @@ function formatPeriod($period, $filterType) {
 
 <head>
     <?php include '../components/head.php'; ?>
-
-<style>
+    <style>
 .container {
     max-width: 1200px;
     margin: 20px auto;
@@ -178,6 +187,39 @@ th {
     margin-right: 10px;
 }
 
+.card {
+    background-color: #f8f9fa; /* Light background for the card */
+    border: 1px solid #e1e1e1; /* Soft border */
+    border-radius: 5px; /* Rounded corners */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.card-title {
+    font-weight: bold; /* Bold title for emphasis */
+    margin-bottom: 1rem; /* Space below the title */
+}
+
+.form-inline {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping for small screens */
+}
+
+.form-group {
+    flex: 1; /* Each form group takes equal space */
+    min-width: 250px; /* Ensure inputs have a minimum width */
+}
+
+.btn-primary {
+    margin-left: 10px; /* Space between the button and inputs */
+    transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
+
+.btn-primary:hover {
+    background-color: #0056b3; /* Darker shade on hover */
+}
+
+
+
 /* Responsive styles */
 @media (max-width: 768px) {
     table {
@@ -195,8 +237,25 @@ th {
     h2 {
         font-size: 20px; /* Adjust subheading size */
     }
+    .form-inline {
+        flex-direction: column; /* Stack inputs on smaller screens */
+        align-items: flex-start; /* Align items to the left */
+    }
+
+    .form-group {
+        width: 100%; /* Full width for inputs */
+        margin-bottom: 15px; /* Space between stacked inputs */
+    }
 }
-</style>
+#downloadPdf {
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
 </head>
 
 <body>
@@ -210,17 +269,38 @@ th {
         <div class="container">
             <h1>Heatmap Data by Location</h1>
 
-            <!-- Filter Dropdown -->
-            <form method="GET">
-                <label for="filter">Select Time Filter:</label>
-                <select id="filter" name="filter" onchange="this.form.submit()">
-                    <option value="hourly" <?= $filterType == 'hourly' ? 'selected' : '' ?>>Hourly</option>
-                    <option value="daily" <?= $filterType == 'daily' ? 'selected' : '' ?>>Daily</option>
-                    <option value="weekly" <?= $filterType == 'weekly' ? 'selected' : '' ?>>Weekly</option>
-                    <option value="monthly" <?= $filterType == 'monthly' ? 'selected' : '' ?>>Monthly</option>
-                    <option value="yearly" <?= $filterType == 'yearly' ? 'selected' : '' ?>>Yearly</option>
-                </select>
-            </form>
+    
+<!-- Filter Form -->
+<div class="card p-3 mb-4">
+    <h5 class="card-title">Filter Data</h5>
+    <form method="GET" class="form-inline">
+        <div class="form-group mr-3">
+            <label for="filter" class="mr-2">Select Time Filter:</label>
+            <select id="filter" name="filter" class="form-control" onchange="this.form.submit()">
+                <option value="hourly" <?= $filterType == 'hourly' ? 'selected' : '' ?>>Hourly</option>
+                <option value="daily" <?= $filterType == 'daily' ? 'selected' : '' ?>>Daily</option>
+                <option value="weekly" <?= $filterType == 'weekly' ? 'selected' : '' ?>>Weekly</option>
+                <option value="monthly" <?= $filterType == 'monthly' ? 'selected' : '' ?>>Monthly</option>
+                <option value="yearly" <?= $filterType == 'yearly' ? 'selected' : '' ?>>Yearly</option>
+            </select>
+        </div>
+
+        <div class="form-group mr-3">
+            <label for="start_date" class="mr-2">Start Date and Time:</label>
+            <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?= htmlspecialchars($startDate) ?>" required>
+        </div>
+
+        <div class="form-group mr-3">
+            <label for="end_date" class="mr-2">End Date and Time:</label>
+            <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?= htmlspecialchars($endDate) ?>" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
+</div>
+
+
+
 
             <!-- Legend -->
             <div class="legend">
@@ -231,88 +311,186 @@ th {
                 <div><div class="legend-color extreme-danger"></div>Extreme Danger (&gt;54°C)</div>
             </div>
 
-            <!-- Loop through each location and generate a table for each -->
-            <?php if ($locationsResult && $locationsResult->num_rows > 0): ?>
-                <?php while ($locationRow = $locationsResult->fetch_assoc()): ?>
-                    <h2>Location: <?= htmlspecialchars($locationRow['location_name']) ?></h2>
+<?php if ($locationsResult && $locationsResult->num_rows > 0): ?>
+    <?php while ($locationRow = $locationsResult->fetch_assoc()): ?>
+        <h2>Location: <?= htmlspecialchars($locationRow['location_name']) ?></h2>
 
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Period</th>
-                                <th>Avg Temperature (°C)</th>
-                                <th>Avg Humidity (%)</th>
-                                <th>Avg Heat Index (°C)</th>
-                                <th>Alert Level</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            // Reset result pointer and loop through data to display only for the current location
-                            $result->data_seek(0);
-                            $locationName = $locationRow['location_name'];
-                            while ($row = $result->fetch_assoc()) {
-                                if ($row['location_name'] == $locationName) {
-                                    $alertClass = getAlertClass($row['avg_heat_index']);
-                                    ?>
-                                    <tr class="<?= $alertClass ?>">
-                                        <td><?= formatPeriod($row['period'], $filterType) ?></td>
-                                        <td><?= number_format($row['avg_temp'], 2) ?></td>
-                                        <td><?= number_format($row['avg_humidity'], 2) ?></td>
-                                        <td><?= number_format($row['avg_heat_index'], 2) ?></td>
-                                        <td><?= ucfirst(str_replace('-', ' ', $alertClass)) ?></td>
-                                    </tr>
-                                    <?php
-                                }
-                            }
-                            ?>
-                        </tbody>
-                    </table>
-                <?php endwhile; ?>
-            <?php else: ?>
-                <p>No locations found.</p>
-            <?php endif; ?>
+        <!-- Download PDF Button for each location -->
+        <button class="btn btn-success downloadPdf" data-location="<?= htmlspecialchars($locationRow['location_name']) ?>">
+            <i class="bi bi-file-earmark-pdf"></i> Download PDF
+        </button>
 
-         <!-- Pagination Links -->
-<div class="d-flex justify-content-between align-items-center mt-4">
-    <div>
-        <!-- Previous Page Link -->
-        <?php if ($page > 1): ?>
-            <a href="?page=<?= $page - 1 ?>&filter=<?= $filterType ?>" class="btn btn-outline-primary">
-                <i class="bi bi-chevron-left"></i> Previous
-            </a>
-        <?php else: ?>
-            <button class="btn btn-outline-secondary" disabled>
-                <i class="bi bi-chevron-left"></i> Previous
-            </button>
-        <?php endif; ?>
-    </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Avg Temperature (°C)</th>
+                    <th>Avg Humidity (%)</th>
+                    <th>Avg Heat Index (°C)</th>
+                    <th>Alert Level</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                // Reset result pointer
+                $locationName = $locationRow['location_name'];
+                $stmt->execute(); // Execute the prepared statement again for new results
+                $result = $stmt->get_result();
 
-    <div>
-        <span>Page <?= $page ?> of <?= $totalPages ?></span>
-    </div>
-
-    <div>
-        <!-- Next Page Link -->
-        <?php if ($page < $totalPages): ?>
-            <a href="?page=<?= $page + 1 ?>&filter=<?= $filterType ?>" class="btn btn-outline-primary">
-                Next <i class="bi bi-chevron-right"></i>
-            </a>
-        <?php else: ?>
-            <button class="btn btn-outline-secondary" disabled>
-                Next <i class="bi bi-chevron-right"></i>
-            </button>
-        <?php endif; ?>
-    </div>
-</div>
+                $dataAvailable = false; // Track if data is available for the current location
+                while ($row = $result->fetch_assoc()) {
+                    if ($row['location_name'] == $locationName) {
+                        $alertClass = getAlertClass($row['avg_heat_index']);
+                        $dataAvailable = true; // Data exists for this location
+                        ?>
+                        <tr class="<?= $alertClass ?>">
+                            <td><?= formatPeriod($row['period'], $filterType) ?></td>
+                            <td><?= number_format($row['avg_temp'], 2) ?></td>
+                            <td><?= number_format($row['avg_humidity'], 2) ?></td>
+                            <td><?= number_format($row['avg_heat_index'], 2) ?></td>
+                            <td><?= ucfirst(str_replace('-', ' ', $alertClass)) ?></td>
+                        </tr>
+                        <?php
+                    }
+                }
+                if (!$dataAvailable) {
+                    echo '<tr><td colspan="5">No readings available for this location.</td></tr>';
+                }
+                ?>
+            </tbody>
+        </table>
+    <?php endwhile; ?>
+<?php else: ?>
+    <p>No locations available for the selected filters.</p>
+<?php endif; ?>
 
 
+            <!-- Pagination Controls -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+               
+                <div>
+                    <!-- Previous Page Link -->
+                    <?php if ($page > 1): ?>
+                        <a href="?page=<?= $page - 1 ?>&filter=<?= $filterType ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>" class="btn btn-outline-primary">
+                            <i class="bi bi-chevron-left"></i> Previous
+                        </a>
+                    <?php else: ?>
+                        <button class="btn btn-outline-secondary" disabled>
+                            <i class="bi bi-chevron-left"></i> Previous
+                        </button>
+                    <?php endif; ?>
+
+                </div>
+
+                    <div>
+                    <span>Page <?= $page ?> of <?= $totalPages ?></span>
+                </div>
+                <div>
+                    <!-- Next Page Link -->
+                    <?php if ($page < $totalPages): ?>
+                        <a href="?page=<?= $page + 1 ?>&filter=<?= $filterType ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>" class="btn btn-outline-primary">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    <?php else: ?>
+                        <button class="btn btn-outline-secondary" disabled>
+                            Next <i class="bi bi-chevron-right"></i>
+                        </button>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
-    </main><!-- End #main -->
+    </main>
 
     <!-- ======= Footer ======= -->
     <?php include '../components/footer.php'; ?>
     <?php include '../components/scripts.php'; ?>
+
+  
+    <script>
+document.querySelectorAll('.downloadPdf').forEach(button => {
+    button.addEventListener('click', function () {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const locationName = this.getAttribute('data-location');
+        const filterType = document.querySelector('#filter').value;
+
+        // Title and introduction
+        const marginLeft = 10;
+        const marginTop = 10;
+        const pageWidth = doc.internal.pageSize.getWidth() - 2 * marginLeft; // Usable page width
+
+        doc.setFontSize(16);
+        doc.text('Heatmap Data Report', marginLeft, marginTop);
+        doc.setFontSize(12);
+        doc.text(`Location: ${locationName}`, marginLeft, marginTop + 10);
+        doc.text(`Filter: ${filterType.charAt(0).toUpperCase() + filterType.slice(1)}`, marginLeft, marginTop + 20);
+
+        // Wrap long introduction text
+        const introText1 = 'This report summarizes the heatmap data for the selected location, including average temperature, humidity, heat index, and alert levels.';
+        const introText2 = 'The data is aggregated based on the selected time filter.';
+        const wrappedText1 = doc.splitTextToSize(introText1, pageWidth);
+        const wrappedText2 = doc.splitTextToSize(introText2, pageWidth);
+
+        // Position the wrapped text
+        doc.text(wrappedText1, marginLeft, marginTop + 30);
+        doc.text(wrappedText2, marginLeft, marginTop + 50);
+        doc.text('Table: Heatmap Data', marginLeft, marginTop + 70);
+
+        // Collect rows only for the selected location's table
+        const rows = [];
+        const tableRows = this.nextElementSibling.querySelectorAll('tbody tr');
+        tableRows.forEach((tr) => {
+            const row = [];
+            tr.querySelectorAll('td').forEach((td) => {
+                row.push(td.textContent.trim());
+            });
+            rows.push(row);
+        });
+
+        const headers = [['Period', 'Avg Temperature (°C)', 'Avg Humidity (%)', 'Avg Heat Index (°C)', 'Alert Level']];
+
+        // Generate table with color coding based on alert level
+        doc.autoTable({
+            head: headers,
+            body: rows,
+            startY: marginTop + 80, // Start table below the introduction text
+            theme: 'grid',
+            styles: { cellPadding: 2, fontSize: 10 },
+            didParseCell: function (data) {
+                if (data.section === 'body' && data.column.index !== 0) { // Apply to all columns except the first one
+                    const alertLevel = data.row.raw[4]; // Get the alert level from the 5th column
+                    const backgroundColor = getColorForAlertLevel(alertLevel);
+                    data.cell.styles.fillColor = backgroundColor;
+                }
+            },
+            margin: { top: marginTop + 80 } // Ensure table fits within margins
+        });
+
+        doc.save(`Heatmap_Report_${locationName}.pdf`);
+    });
+});
+
+
+// Helper function to determine background color for alert level
+function getColorForAlertLevel(alertLevel) {
+    switch (alertLevel.toLowerCase()) {
+        case 'caution':
+            return [255, 255, 0]; // Light Yellow
+        case 'extreme caution':
+            return [255, 204, 0]; // Light Orange
+        case 'danger':
+            return [255, 102, 0]; // Light Red
+        case 'extreme danger':
+            return [204, 0, 1]; // Dark Red
+        default:
+            return [230, 230, 230]; // Normal (Gray)
+    }
+}
+
+</script>
+
+
 </body>
 
 </html>

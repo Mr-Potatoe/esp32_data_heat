@@ -6,6 +6,16 @@
 <html lang="en">
 <head>
 <?php include '../components/head.php'; ?> <!-- Include the head -->
+<style>
+    .container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+</style>
 </head>
 <body>
     <!-- ======= Header ======= -->
@@ -15,12 +25,9 @@
       <?php include '../components/sidebar.php'; ?>
 
         <main id="main" class="main">
-
-        <header class="bg-primary text-white p-4">
+        <div class="container">
             <h1 class="text-2xl font-bold text-center">Zamboanga del Sur Provincial Government College Campus Map</h1>
-        </header>
 
-        <div class="container mt-4">
             <div class="row justify-content-center">
                 <div class="col-md-8">
                     <div class="card shadow">

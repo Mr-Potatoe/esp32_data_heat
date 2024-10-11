@@ -42,41 +42,52 @@ if ($result->num_rows > 0) {
     }
 }
 
-
-// Fetch time series data based on the selected interval (default: daily)
+// Get the selected time interval, start date, and end date
 $interval = isset($_GET['interval']) ? $_GET['interval'] : 'hour';
-$interval_query = "";
+$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : '';
+$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 
+// Adjust the interval query based on the selected interval
+$interval_query = "";
 switch ($interval) {
     case 'hour':
-        $interval_query = "DATE_FORMAT(alert_time, '%Y-%m-%d %H:00:00') as time_label";
+        $interval_query = "DATE_FORMAT(alert_time, '%Y-%m-%d %H:00:00') as time_label"; // Format to show hours
         break;
     case 'day':
-        $interval_query = "DATE_FORMAT(alert_time, '%Y-%m-%d') as time_label";
+        $interval_query = "DATE_FORMAT(alert_time, '%Y-%m-%d') as time_label"; // Show full date
         break;
     case 'week':
-        $interval_query = "DATE_FORMAT(alert_time, '%Y-%u') as time_label"; // week number
+        $interval_query = "DATE_FORMAT(alert_time, '%Y-%u') as time_label"; // Week number
         break;
     case 'month':
-        $interval_query = "DATE_FORMAT(alert_time, '%Y-%m') as time_label";
+        $interval_query = "DATE_FORMAT(alert_time, '%Y-%m') as time_label"; // Month and year
         break;
     case 'year':
-        $interval_query = "DATE_FORMAT(alert_time, '%Y') as time_label";
+        $interval_query = "DATE_FORMAT(alert_time, '%Y') as time_label"; // Just year
         break;
 }
 
-// Prepare SQL query for time series data for all locations
+// Modify the time series query to include date filtering
 $query_time_series = "SELECT $interval_query, location_name, AVG(temperature) AS avg_temperature, AVG(humidity) AS avg_humidity, AVG(heat_index) AS avg_heat_index
                       FROM sensor_readings
-                      GROUP BY time_label, location_name
-                      ORDER BY alert_time";
+                      WHERE alert_time IS NOT NULL";
+
+// Append start and end date conditions to the query if provided
+if (!empty($startDate)) {
+    $query_time_series .= " AND alert_time >= '$startDate'";
+}
+if (!empty($endDate)) {
+    $query_time_series .= " AND alert_time <= '$endDate'";
+}
+
+$query_time_series .= " GROUP BY time_label, location_name ORDER BY alert_time";
+
 $result_time_series = $conn->query($query_time_series);
 
-// Prepare data for the line charts
+// Prepare data for line charts
 $locationData = [];
-
 if ($result_time_series->num_rows > 0) {
-    while($row = $result_time_series->fetch_assoc()) {
+    while ($row = $result_time_series->fetch_assoc()) {
         $timeLabel = htmlspecialchars($row['time_label']);
         $locationName = htmlspecialchars($row['location_name']);
         
@@ -96,13 +107,10 @@ if ($result_time_series->num_rows > 0) {
     }
 }
 
-// Add this check to display a message if no data is available
-if (empty($locations)) {
-    $noDataMessage = "No data available for the selected time interval.";
-} else {
-    $noDataMessage = "";
-}
+// Display message if no data is available
+$noDataMessage = empty($locations) ? "No data available for the selected time interval." : "";
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -110,6 +118,17 @@ if (empty($locations)) {
     <?php include '../components/head.php'; ?>
     <title>Sensor Readings Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
+
+    <style>
+        .container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+    </style>
 </head>
 <body>
 
@@ -120,13 +139,16 @@ if (empty($locations)) {
     <?php include '../components/sidebar.php'; ?>
 
     <main id="main" class="main">
-    <div class="container-fluid">
+    <div class="container">
         <h1 class="mt-4">Sensor Readings Dashboard</h1>
 
-        <!-- Filter Dropdown for Time Interval -->
-        <div class="mb-4">
-            <label for="interval" class="form-label">Select Time Interval:</label>
-            <select id="interval" class="form-select" onchange="filterData()">
+<!-- Filter Form -->
+<form method="GET" action="" class="mb-4">
+    <div class="row mb-3">
+        <div class="col">
+            <!-- Time Interval Dropdown -->
+            <label for="interval" class="form-label">Interval:</label>
+            <select id="interval" name="interval" class="form-select">
                 <option value="hour" <?php echo $interval === 'hour' ? 'selected' : ''; ?>>Hourly</option>
                 <option value="day" <?php echo $interval === 'day' ? 'selected' : ''; ?>>Daily</option>
                 <option value="week" <?php echo $interval === 'week' ? 'selected' : ''; ?>>Weekly</option>
@@ -134,6 +156,31 @@ if (empty($locations)) {
                 <option value="year" <?php echo $interval === 'year' ? 'selected' : ''; ?>>Yearly</option>
             </select>
         </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col">
+            <!-- Start Date Picker -->
+            <label for="start_date" class="form-label">Start:</label>
+            <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?php echo isset($_GET['start_date']) ? $_GET['start_date'] : ''; ?>">
+        </div>
+        <div class="col">
+            <!-- End Date Picker -->
+            <label for="end_date" class="form-label">End:</label>
+            <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?php echo isset($_GET['end_date']) ? $_GET['end_date'] : ''; ?>">
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between mt-3">
+        <!-- Filter Button -->
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <!-- Download PDF Button -->
+        <a href="../../generate_report.php?interval=<?php echo $interval; ?>&start_date=<?php echo $startDate; ?>&end_date=<?php echo $endDate; ?>" class="btn btn-secondary" target="_blank">Download PDF</a>
+    </div>
+</form>
+
+
+
 
         <!-- Check if there are no locations and display the message -->
 <?php if (!empty($noDataMessage)): ?>
@@ -144,22 +191,52 @@ if (empty($locations)) {
 
 
       <!-- Individual Bar and Line Charts for Each Location -->
-<div id="charts" class="row">
+      <div id="charts" class="row">
     <?php foreach ($locations as $index => $locationName): ?>
         <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card shadow-sm rounded">
+            <div class="card shadow-lg rounded" style="border: none; transition: transform 0.2s;">
                 <div class="card-body">
-                    <h4><?php echo htmlspecialchars($locationName); ?> Average Readings</h4>
-                    <canvas id="barChart_<?php echo $index; ?>"></canvas>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Average Readings</h4>
+                        <!-- Dynamic time label -->
+                        <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #555;">
+                            <?php
+                                // Assuming you're extracting the time labels from $locationData
+                                if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
+                                    // Get the latest time label for display
+                                    $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
+                                    echo htmlspecialchars($latestTimeLabel);
+                                } else {
+                                    echo "No data available";
+                                }
+                            ?>
+                        </div>
+                    </div>
+                    <canvas id="barChart_<?php echo $index; ?>" style="height: 250px;"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card shadow-sm rounded">
+            <div class="card shadow-lg rounded" style="border: none; transition: transform 0.2s;">
                 <div class="card-body">
-                    <h4><?php echo htmlspecialchars($locationName); ?> Trends</h4>
-                    <canvas id="lineChart_<?php echo $index; ?>"></canvas>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Trends</h4>
+                        <!-- Dynamic time label -->
+                        <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #555;">
+                            <?php
+                                // Assuming you're extracting the time labels from $locationData
+                                if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
+                                    // Get the latest time label for display
+                                    $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
+                                    echo htmlspecialchars($latestTimeLabel);
+                                } else {
+                                    echo "No data available";
+                                }
+                            ?>
+                        </div>
+                    </div>
+                    <canvas id="lineChart_<?php echo $index; ?>" style="height: 250px;"></canvas>
                 </div>
             </div>
         </div>
@@ -179,9 +256,9 @@ if (empty($locations)) {
                         datasets: [{
                             label: locationName,
                             data: [avgTemperature, avgHumidity, avgHeatIndex],
-                            backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)', 'rgba(255, 206, 86, 0.2)'],
+                            backgroundColor: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(255, 206, 86, 0.6)'],
                             borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)'],
-                            borderWidth: 1,
+                            borderWidth: 2,
                         }]
                     },
                     options: {
@@ -191,14 +268,20 @@ if (empty($locations)) {
                         },
                         plugins: {
                             legend: { display: false },
-                            title: { display: true, text: `Average Readings for ${locationName}` }
+                            title: { display: true, text: `Average Readings for ${locationName}` },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tooltipItem) {
+                                        return `${tooltipItem.dataset.label}: ${tooltipItem.raw}`;
+                                    }
+                                }
+                            }
                         }
                     }
                 });
             })(<?php echo $index; ?>, '<?php echo addslashes($locationName); ?>');
 
             // Line Chart Rendering
-            
             (function(index, locationName) {
                 const data = <?php echo json_encode($locationData[$locationName]); ?>;
 
@@ -206,37 +289,31 @@ if (empty($locations)) {
                 new Chart(ctxLine, {
                     type: 'line',
                     data: {
-                        labels: data.timeLabels, // Ensure labels are available but optimized in the options
+                        labels: data.timeLabels.map(label => new Date(label).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })), // Show only hours
                         datasets: [
                             { 
                                 label: 'Average Temperature (°C)',
                                 data: data.avgTemperatures,
                                 fill: false,
                                 borderColor: 'rgba(255, 99, 132, 1)',
-                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
                                 tension: 0.1,
                                 pointBackgroundColor: 'rgba(255, 99, 132, 1)',
-                                pointBorderColor: '#fff'
                             },
                             { 
                                 label: 'Average Humidity (%)',
                                 data: data.avgHumidity,
                                 fill: false,
                                 borderColor: 'rgba(54, 162, 235, 1)',
-                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
                                 tension: 0.1,
                                 pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-                                pointBorderColor: '#fff'
                             },
                             { 
                                 label: 'Average Heat Index',
                                 data: data.avgHeatIndexes,
                                 fill: false,
                                 borderColor: 'rgba(255, 206, 86, 1)',
-                                backgroundColor: 'rgba(255, 206, 86, 0.2)',
                                 tension: 0.1,
                                 pointBackgroundColor: 'rgba(255, 206, 86, 1)',
-                                pointBorderColor: '#fff'
                             }
                         ]
                     },
@@ -245,27 +322,34 @@ if (empty($locations)) {
                         scales: {
                             x: {
                                 ticks: {
-                                    autoSkip: true,               // Automatically skip labels
-                                    maxTicksLimit: 8,             // Limit the number of labels
-                                    maxRotation: 0,               // Prevent label rotation unless necessary
-                                    minRotation: 0                // Keep it flat for better readability
+                                    autoSkip: true,
+                                    maxTicksLimit: 8,
+                                    maxRotation: 0,
+                                    minRotation: 0
                                 },
                                 grid: {
                                     display: true,
-                                    color: 'rgba(200, 200, 200, 0.2)' // Subtle gridlines
+                                    color: 'rgba(200, 200, 200, 0.5)'
                                 }
                             },
                             y: {
                                 beginAtZero: true,
                                 grid: {
                                     display: true,
-                                    color: 'rgba(200, 200, 200, 0.2)'
+                                    color: 'rgba(200, 200, 200, 0.5)'
                                 }
                             }
                         },
                         plugins: {
                             legend: { display: true },
-                            title: { display: true, text: `Trends for ${locationName}` }
+                            title: { display: true, text: `Trends for ${locationName}` },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tooltipItem) {
+                                        return `${tooltipItem.dataset.label}: ${tooltipItem.raw}`;
+                                    }
+                                }
+                            }
                         },
                         elements: {
                             point: {
@@ -276,10 +360,11 @@ if (empty($locations)) {
                     }
                 });
             })(<?php echo $index; ?>, '<?php echo addslashes($locationName); ?>');
-        
         </script>
     <?php endforeach; ?>
 </div>
+
+
 
         <!-- Pagination Links -->
 <div class="d-flex justify-content-between align-items-center mt-4">
@@ -322,11 +407,21 @@ if (empty($locations)) {
     <?php include '../components/footer.php'; ?>
 
     <script>
-        function filterData() {
-            const interval = document.getElementById('interval').value;
-            window.location.href = `?interval=${interval}`; // Redirect with selected interval
+    function filterData() {
+        const interval = document.getElementById('interval').value;
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+
+        // Ensure both start and end dates are provided
+        if (startDate && endDate) {
+            window.location.href = `?interval=${interval}&start_date=${startDate}&end_date=${endDate}`;
+        } else {
+            alert('Please provide both start and end dates.');
         }
-    </script>
+    }
+</script>
+
+
     <?php include '../components/scripts.php'; ?>
 
 </body>

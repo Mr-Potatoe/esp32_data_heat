@@ -54,6 +54,14 @@ $totalPages = ceil($totalRows / $limit);
     <?php include '../components/head.php'; ?>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
     <style>
+.container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
 
 table {
     width: 100%;
@@ -111,101 +119,94 @@ th {
     <?php include '../components/sidebar.php'; ?>
 
     <main id="main" class="main">
-        <div class="container my-5">
-            <h1 class="text-center mb-4">Heat Index Alerts</h1>
+    <div class="container">
+    <h1 class="text-center mb-4">Heat Index Alerts</h1>
 
-            <!-- Summary Section with responsive cards -->
-            <div class="row text-center mb-4">
-                <div class="col-lg-4 col-md-6 mb-3">
-                    <div class="card bg-light p-3 h-100">
-                        <h4>Total Alerts</h4>
-                        <p class="display-4"><?php echo $summaryData['total_alerts']; ?></p>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6 mb-3">
-                    <div class="card bg-light p-3 h-100">
-                        <h4>Highest Heat Index</h4>
-                        <p class="display-4"><?php echo number_format($summaryData['highest_heat_index'], 2); ?> °C</p>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6 mb-3">
-                    <div class="card bg-light p-3 h-100">
-                        <h4>Total Locations</h4>
-                        <p class="display-4"><?php echo $locationSummaryData['total_locations']; ?></p>
-                    </div>
-                </div>
+    <!-- Summary Section with responsive cards -->
+    <div class="row text-center mb-4">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card bg-light p-3 h-100">
+                <h4>Total Alerts</h4>
+                <p class="display-4"><?php echo $summaryData['total_alerts']; ?></p>
             </div>
-
-            <!-- Chart Section -->
-            <div class="row">
-                <div class="col-12 mb-4">
-                    <div class="card p-3">
-                        <canvas id="alertChart"></canvas> <!-- Placeholder for the chart -->
-                    </div>
-                </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card bg-light p-3 h-100">
+                <h4>Highest Heat Index</h4>
+                <p class="display-4"><?php echo number_format($summaryData['highest_heat_index'], 2); ?> °C</p>
             </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card bg-light p-3 h-100">
+                <h4>Total Locations</h4>
+                <p class="display-4"><?php echo $locationSummaryData['total_locations']; ?></p>
+            </div>
+        </div>
+    </div>
 
-            <!-- Alerts Table with hover effect and responsive design -->
-                <table>
-                    <thead>
-                        <tr>
-                            <th scope="col">Location</th>
-                            <!-- <th scope="col">Latitude</th>
-                            <th scope="col">Longitude</th> -->
-                            <th scope="col">Temperature (°C)</th>
-                            <th scope="col">Humidity (%)</th>
-                            <th scope="col">Heat Index</th>
-                            <th scope="col">Alert Level</th>
-                            <th scope="col">Alert Time</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+    <!-- Chart Section -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h3 class="text-center mb-2">Alerts by Location</h3> <!-- Chart label -->
+            <div class="card p-3">
+                <canvas id="alertChart"></canvas> <!-- Placeholder for the chart -->
+            </div>
+        </div>
+    </div>
 
+    <!-- Alerts Table with hover effect and responsive design -->
+    <h3 class="text-center mb-2">Detailed Alerts</h3> <!-- Table label -->
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">Location</th>
+                <th scope="col">Temperature (°C)</th>
+                <th scope="col">Humidity (%)</th>
+                <th scope="col">Heat Index</th>
+                <th scope="col">Alert Level</th>
+                <th scope="col">Alert Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php
+            // Function to determine the background color class based on the heat index
+            function getAlertClass($heatIndex) {
+                if ($heatIndex < 27) {
+                    return 'normal'; // Changed from 'Normal' to 'normal'
+                } elseif ($heatIndex >= 27 && $heatIndex < 32) {
+                    return 'caution';
+                } elseif ($heatIndex >= 32 && $heatIndex < 41) {
+                    return 'extreme-caution';
+                } elseif ($heatIndex >= 41 && $heatIndex < 54) {
+                    return 'danger';
+                } else {
+                    return 'extreme-danger';
+                }
+            }
 
-                        <?php
-                        // Function to determine the background color class based on the heat index
-function getAlertClass($heatIndex) {
-    if ($heatIndex < 27) {
-        return 'normal'; // Changed from 'Normal' to 'normal'
-    } elseif ($heatIndex >= 27 && $heatIndex < 32) {
-        return 'caution';
-    } elseif ($heatIndex >= 32 && $heatIndex < 41) {
-        return 'extreme-caution';
-    } elseif ($heatIndex >= 41 && $heatIndex < 54) {
-        return 'danger';
-    } else {
-        return 'extreme-danger';
-    }
-}
+            if ($result->num_rows > 0) {
+                while ($row = $result->fetch_assoc()) {
+                    // Determine the alert class based on the heat index
+                    $alertClass = getAlertClass($row['heat_index']);
+                    echo "<tr class='{$alertClass}'>"; // Only include alert class
+                    echo "<td>" . htmlspecialchars($row['location_name']) . "</td>";
+                    echo "<td>" . htmlspecialchars($row['temperature']) . "</td>";
+                    echo "<td>" . htmlspecialchars($row['humidity']) . "</td>";
+                    echo "<td>" . htmlspecialchars($row['heat_index']) . "</td>";
+                    echo "<td>" . htmlspecialchars($alertClass) . "</td>"; // Display the alert class
 
-if ($result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        // Determine the alert class based on the heat index
-        $alertClass = getAlertClass($row['heat_index']);
+                    // Format the alert time
+                    $date = new DateTime($row['alert_time']);
+                    echo "<td>" . htmlspecialchars($date->format('F j, Y g:i:s A')) . "</td>"; // Example: October 10, 2024 03:45 PM
 
-        echo "<tr class='{$alertClass}'>"; // Only include alert class
-        echo "<td>" . htmlspecialchars($row['location_name']) . "</td>";
-        // echo "<td>" . htmlspecialchars($row['latitude']) . "</td>";
-        // echo "<td>" . htmlspecialchars($row['longitude']) . "</td>";
-        echo "<td>" . htmlspecialchars($row['temperature']) . "</td>";
-        echo "<td>" . htmlspecialchars($row['humidity']) . "</td>";
-        echo "<td>" . htmlspecialchars($row['heat_index']) . "</td>";
-        echo "<td>" . htmlspecialchars($alertClass) . "</td>"; // Display the alert class
-
-        // Format the alert time
-        $date = new DateTime($row['alert_time']);
-        echo "<td>" . htmlspecialchars($date->format('F j, Y g:i:s A')) . "</td>"; // Example: October 10, 2024 03:45 PM
-
-        echo "</tr>";
-    }
-} else {
-    echo "<tr><td colspan='8' class='text-center'>No alerts found</td></tr>";
-}
-?>
-
-</tbody>
-
-                </table>
+                    echo "</tr>";
+                }
+            } else {
+                echo "<tr><td colspan='6' class='text-center'>No alerts found</td></tr>";
+            }
+            ?>
+        </tbody>
+    </table>
 
                 <!-- Pagination -->
                 <nav aria-label="Page navigation">
@@ -332,4 +333,4 @@ if ($result->num_rows > 0) {
         });
     </script>
 </body>
-</html>
+</html>s
