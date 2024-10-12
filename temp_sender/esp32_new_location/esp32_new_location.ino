@@ -8,7 +8,7 @@ const char *ssid = "FTTH 5G";
 const char *password = "Slark123";
 
 // Server URL
-const char *serverUrl = "http://192.168.1.45/esp32_data_heat/insert_data.php";  // Replace with your XAMPP server IP
+const char *serverUrl = "http://192.168.1.45/esp32_data_heat/receiver/sensor_data_receiver.php";  // Replace with your XAMPP server IP
 
 DHT dht(26, DHT11);
 
