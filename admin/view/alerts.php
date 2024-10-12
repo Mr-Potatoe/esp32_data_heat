@@ -8,8 +8,19 @@ loadEnv();
 // Connect to the database
 $conn = dbConnect();
 
-// Fetch summary data
-$querySummary = "SELECT COUNT(*) AS total_alerts, MAX(heat_index) AS highest_heat_index FROM sensor_readings WHERE alert IS NOT NULL";
+// Fetch total number of alerts (this was previously missing)
+$queryTotalAlerts = "SELECT COUNT(*) AS total_alerts FROM sensor_readings WHERE alert IS NOT NULL";
+$totalAlertsResult = $conn->query($queryTotalAlerts);
+$totalAlertsData = $totalAlertsResult->fetch_assoc(); // This will contain total_alerts
+
+// Fetch summary data including the location of the highest heat index
+$querySummary = "
+  SELECT location_name, MAX(heat_index) AS highest_heat_index 
+  FROM sensor_readings 
+  WHERE alert IS NOT NULL 
+  GROUP BY location_name 
+  ORDER BY highest_heat_index DESC 
+  LIMIT 1";
 $summaryResult = $conn->query($querySummary);
 $summaryData = $summaryResult->fetch_assoc();
 
@@ -17,6 +28,7 @@ $summaryData = $summaryResult->fetch_assoc();
 $queryLocationSummary = "SELECT COUNT(DISTINCT location_name) AS total_locations FROM sensor_readings WHERE alert IS NOT NULL";
 $locationSummaryResult = $conn->query($queryLocationSummary);
 $locationSummaryData = $locationSummaryResult->fetch_assoc();
+
 
 // Fetch chart data (alerts by location)
 $queryChart = "SELECT location_name, COUNT(*) AS alert_count 
@@ -122,27 +134,43 @@ th {
     <div class="container">
     <h1 class="text-center mb-4">Heat Index Alerts</h1>
 
-    <!-- Summary Section with responsive cards -->
-    <div class="row text-center mb-4">
-        <div class="col-lg-4 col-md-6 mb-3">
-            <div class="card bg-light p-3 h-100">
-                <h4>Total Alerts</h4>
-                <p class="display-4"><?php echo $summaryData['total_alerts']; ?></p>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-6 mb-3">
-            <div class="card bg-light p-3 h-100">
-                <h4>Highest Heat Index</h4>
-                <p class="display-4"><?php echo number_format($summaryData['highest_heat_index'], 2); ?> °C</p>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-6 mb-3">
-            <div class="card bg-light p-3 h-100">
-                <h4>Total Locations</h4>
-                <p class="display-4"><?php echo $locationSummaryData['total_locations']; ?></p>
-            </div>
+<!-- Summary Section with responsive cards -->
+<div class="row text-center mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-light p-3 h-100">
+            <h4>Total Alerts</h4>
+            <p class="display-4"><?php echo $totalAlertsData['total_alerts']; ?></p>
         </div>
     </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card bg-light p-3 h-100">
+        <h4>Highest Heat Index</h4>
+        <?php if (isset($summaryData['highest_heat_index'])): ?>
+            <p class="display-4"><?php echo number_format($summaryData['highest_heat_index'], 2); ?> °C</p>
+        <?php else: ?>
+            <p class="display-4">N/A</p>
+        <?php endif; ?>
+    </div>
+</div>
+<div class="col-lg-3 col-md-6 mb-3">
+    <div class="card bg-light p-3 h-100">
+        <h4>Location of Highest Heat Index</h4>
+        <?php if (isset($summaryData['location_name'])): ?>
+            <p class="display-4"><?php echo $summaryData['location_name']; ?></p>
+        <?php else: ?>
+            <p class="display-4">N/A</p>
+        <?php endif; ?>
+    </div>
+</div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-light p-3 h-100">
+            <h4>Total Locations</h4>
+            <p class="display-4"><?php echo $locationSummaryData['total_locations']; ?></p>
+        </div>
+    </div>
+</div>
+
 
     <!-- Chart Section -->
     <div class="row">

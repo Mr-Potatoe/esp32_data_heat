@@ -267,7 +267,7 @@ th {
 
     <main id="main" class="main">
         <div class="container">
-            <h1>Heatmap Data by Location</h1>
+            <h1>Heatmap Table Data by Location</h1>
 
     
 <!-- Filter Form -->
@@ -287,12 +287,12 @@ th {
 
         <div class="form-group mr-3">
             <label for="start_date" class="mr-2">Start Date and Time:</label>
-            <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?= htmlspecialchars($startDate) ?>" required>
+            <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?= htmlspecialchars($startDate) ?>" >
         </div>
 
         <div class="form-group mr-3">
             <label for="end_date" class="mr-2">End Date and Time:</label>
-            <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?= htmlspecialchars($endDate) ?>" required>
+            <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?= htmlspecialchars($endDate) ?>" >
         </div>
 
         <button type="submit" class="btn btn-primary">Filter</button>

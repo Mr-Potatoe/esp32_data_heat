@@ -1,0 +1,40 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#f0f0f0" />
+
+  <!-- Main Building -->
+  <rect x="100" y="50" width="600" height="150" fill="#cfe2f3" stroke="#6d9eeb" stroke-width="2" />
+  <text x="400" y="30" text-anchor="middle" font-size="18" font-family="Arial" fill="#000">Main Building</text>
+
+  <!-- Library -->
+  <rect x="100" y="250" width="250" height="100" fill="#f9cb9c" stroke="#e69138" stroke-width="2" />
+  <text x="225" y="240" text-anchor="middle" font-size="16" font-family="Arial" fill="#000">Library</text>
+
+  <!-- Classrooms Block -->
+  <rect x="450" y="250" width="250" height="100" fill="#b6d7a8" stroke="#6aa84f" stroke-width="2" />
+  <text x="575" y="240" text-anchor="middle" font-size="16" font-family="Arial" fill="#000">Classrooms Block</text>
+
+  <!-- Playground -->
+  <rect x="100" y="400" width="250" height="150" fill="#ffe599" stroke="#f1c232" stroke-width="2" />
+  <text x="225" y="395" text-anchor="middle" font-size="16" font-family="Arial" fill="#000">Playground</text>
+
+  <!-- Cafeteria -->
+  <rect x="450" y="400" width="250" height="100" fill="#d5a6bd" stroke="#a64d79" stroke-width="2" />
+  <text x="575" y="395" text-anchor="middle" font-size="16" font-family="Arial" fill="#000">Cafeteria</text>
+
+  <!-- Labels for Rooms Inside the Main Building -->
+  <text x="150" y="100" font-size="12" font-family="Arial" fill="#000">Room 101</text>
+  <text x="150" y="150" font-size="12" font-family="Arial" fill="#000">Room 102</text>
+  <text x="400" y="100" font-size="12" font-family="Arial" fill="#000">Room 201</text>
+  <text x="400" y="150" font-size="12" font-family="Arial" fill="#000">Room 202</text>
+  <text x="650" y="100" font-size="12" font-family="Arial" fill="#000">Room 301</text>
+  <text x="650" y="150" font-size="12" font-family="Arial" fill="#000">Room 302</text>
+
+  <!-- Hallways -->
+  <line x1="100" y1="125" x2="700" y2="125" stroke="#999" stroke-width="2" stroke-dasharray="5,5" />
+  <line x1="100" y1="175" x2="700" y2="175" stroke="#999" stroke-width="2" stroke-dasharray="5,5" />
+
+  <!-- Pathways between areas -->
+  <line x1="225" y1="350" x2="225" y2="400" stroke="#666" stroke-width="4" />
+  <line x1="575" y1="350" x2="575" y2="400" stroke="#666" stroke-width="4" />
+</svg>
