@@ -1,5 +1,5 @@
 <?php
-require 'config.php'; // Configuration and database connection
+require '../config.php'; // Configuration and database connection
 loadEnv(); // Load environment variables
 $conn = dbConnect(); // Connect to the database
 

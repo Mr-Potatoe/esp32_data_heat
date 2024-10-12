@@ -3,8 +3,8 @@
 <title><?php echo isset($page_title) ? $page_title : 'Admin Panel'; ?></title>
 
 <!-- Favicons -->
-<link href="../../assets/img/favicon.png" rel="icon">
-<link href="../../assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+<link href="../../assets/img/school.png" rel="icon">
+<link href="../../assets/img/school.png" rel="apple-touch-icon">
 
 <!-- Google Fonts -->
 <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>

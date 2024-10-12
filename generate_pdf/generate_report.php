@@ -1,6 +1,6 @@
 <?php
-require 'vendor/autoload.php'; // Load TCPDF
-require 'config.php'; // Load your database connection
+require '../vendor/autoload.php'; // Load TCPDF
+require '../config.php'; // Load your database connection
 
 loadEnv(); 
 $conn = dbConnect();

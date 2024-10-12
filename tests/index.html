@@ -144,7 +144,7 @@
         
             // Function to fetch and update heatmap data
             function fetchSensorData() {
-                fetch('fetch_sensor_data.php') // Fetch data from your PHP script
+                fetch('../fetch_php/data_fetch_map.php') // Fetch data from your PHP script
                     .then(response => response.json())
                     .then(data => {
                         const heatData = data.map(sensor => {

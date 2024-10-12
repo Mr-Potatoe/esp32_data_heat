@@ -3,113 +3,9 @@
 require '../../config.php'; // Configuration and database connection
 loadEnv(); // Load environment variables
 $conn = dbConnect(); // Connect to the database
-
-// Define how many charts to show per page
-$chartsPerPage = 2; // Adjust this value to control the number of charts displayed per page
-
-// Get the current page from the URL, default to 1 if not set
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$offset = ($page - 1) * $chartsPerPage;
-
-// Query to get total number of locations
-$totalLocationsQuery = "SELECT COUNT(DISTINCT location_name) AS total_locations FROM sensor_readings";
-$totalLocationsResult = $conn->query($totalLocationsQuery);
-$totalLocations = $totalLocationsResult->fetch_assoc()['total_locations'];
-
-// Calculate the total number of pages
-$totalPages = ceil($totalLocations / $chartsPerPage);
-
-// Fetch sensor readings grouped by location with pagination
-$query = "SELECT location_name, AVG(temperature) AS avg_temperature, AVG(humidity) AS avg_humidity, AVG(heat_index) AS avg_heat_index
-          FROM sensor_readings
-          GROUP BY location_name
-          ORDER BY location_name
-          LIMIT $chartsPerPage OFFSET $offset"; // Limit the query for pagination
-$result = $conn->query($query);
-
-// Prepare data for charts
-$locations = [];
-$avgTemperatures = [];
-$avgHumidity = [];
-$avgHeatIndexes = [];
-
-if ($result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
-        $locations[] = htmlspecialchars($row['location_name']);
-        $avgTemperatures[] = floatval($row['avg_temperature']);
-        $avgHumidity[] = floatval($row['avg_humidity']);
-        $avgHeatIndexes[] = floatval($row['avg_heat_index']);
-    }
-}
-
-// Get the selected time interval, start date, and end date
-$interval = isset($_GET['interval']) ? $_GET['interval'] : 'hour';
-$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : '';
-$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
-
-// Adjust the interval query based on the selected interval
-$interval_query = "";
-switch ($interval) {
-    case 'hour':
-        $interval_query = "DATE_FORMAT(alert_time, '%Y-%m-%d %H:00:00') as time_label"; // Format to show hours
-        break;
-    case 'day':
-        $interval_query = "DATE_FORMAT(alert_time, '%Y-%m-%d') as time_label"; // Show full date
-        break;
-    case 'week':
-        $interval_query = "DATE_FORMAT(alert_time, '%Y-%u') as time_label"; // Week number
-        break;
-    case 'month':
-        $interval_query = "DATE_FORMAT(alert_time, '%Y-%m') as time_label"; // Month and year
-        break;
-    case 'year':
-        $interval_query = "DATE_FORMAT(alert_time, '%Y') as time_label"; // Just year
-        break;
-}
-
-// Modify the time series query to include date filtering
-$query_time_series = "SELECT $interval_query, location_name, AVG(temperature) AS avg_temperature, AVG(humidity) AS avg_humidity, AVG(heat_index) AS avg_heat_index
-                      FROM sensor_readings
-                      WHERE alert_time IS NOT NULL";
-
-// Append start and end date conditions to the query if provided
-if (!empty($startDate)) {
-    $query_time_series .= " AND alert_time >= '$startDate'";
-}
-if (!empty($endDate)) {
-    $query_time_series .= " AND alert_time <= '$endDate'";
-}
-
-$query_time_series .= " GROUP BY time_label, location_name ORDER BY alert_time";
-
-$result_time_series = $conn->query($query_time_series);
-
-// Prepare data for line charts
-$locationData = [];
-if ($result_time_series->num_rows > 0) {
-    while ($row = $result_time_series->fetch_assoc()) {
-        $timeLabel = htmlspecialchars($row['time_label']);
-        $locationName = htmlspecialchars($row['location_name']);
-        
-        if (!isset($locationData[$locationName])) {
-            $locationData[$locationName] = [
-                'timeLabels' => [],
-                'avgTemperatures' => [],
-                'avgHumidity' => [],
-                'avgHeatIndexes' => []
-            ];
-        }
-        
-        $locationData[$locationName]['timeLabels'][] = $timeLabel;
-        $locationData[$locationName]['avgTemperatures'][] = floatval($row['avg_temperature']);
-        $locationData[$locationName]['avgHumidity'][] = floatval($row['avg_humidity']);
-        $locationData[$locationName]['avgHeatIndexes'][] = floatval($row['avg_heat_index']);
-    }
-}
-
-// Display message if no data is available
-$noDataMessage = empty($locations) ? "No data available for the selected time interval." : "";
 ?>
+
+<?php include '../../fetch_php/fetch_dashboard.php'; ?>
 
 
 <!DOCTYPE html>
@@ -128,6 +24,12 @@ $noDataMessage = empty($locations) ? "No data available for the selected time in
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
+.card-hover:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    .text-center { text-align: center; }
+    .h-100 { height: 100%; }
     </style>
 </head>
 <body>
@@ -175,7 +77,7 @@ $noDataMessage = empty($locations) ? "No data available for the selected time in
         <!-- Filter Button -->
         <button type="submit" class="btn btn-primary">Filter</button>
         <!-- Download PDF Button -->
-        <a href="../../generate_report.php?interval=<?php echo $interval; ?>&start_date=<?php echo $startDate; ?>&end_date=<?php echo $endDate; ?>" class="btn btn-secondary" target="_blank">Download PDF</a>
+        <a href="../../generate_pdf/generate_report.php?interval=<?php echo $interval; ?>&start_date=<?php echo $startDate; ?>&end_date=<?php echo $endDate; ?>" class="btn btn-secondary" target="_blank">Download PDF</a>
     </div>
 </form>
 
@@ -194,52 +96,63 @@ $noDataMessage = empty($locations) ? "No data available for the selected time in
       <div id="charts" class="row">
     <?php foreach ($locations as $index => $locationName): ?>
         <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card shadow-lg rounded" style="border: none; transition: transform 0.2s;">
+        <div class="card shadow-sm rounded h-100 card-hover" style="border: none; transition: transform 0.2s;">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Average Readings</h4>
-                        <!-- Dynamic time label -->
-                        <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #555;">
-                            <?php
-                                // Assuming you're extracting the time labels from $locationData
-                                if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
-                                    // Get the latest time label for display
-                                    $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
-                                    echo htmlspecialchars($latestTimeLabel);
-                                } else {
-                                    echo "No data available";
-                                }
-                            ?>
-                        </div>
+                <div class="d-flex justify-content-between align-items-start">
+                    <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Average Readings</h4>
+                    <!-- Dynamic time label with improved readability -->
+                    <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #666; font-weight: bold;">
+                        <?php
+                            // Assuming you're extracting the time labels from $locationData
+                            if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
+                                // Get the latest time label for display
+                                $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
+
+                                // Format the time in a more human-readable way
+                                $formattedTimeLabel = date("F j, Y, g:i A", strtotime($latestTimeLabel));
+
+                                // Display the formatted time with a tooltip for full date-time
+                                echo '<span data-toggle="tooltip" title="Full Time: ' . htmlspecialchars($latestTimeLabel) . '">' . htmlspecialchars($formattedTimeLabel) . '</span>';
+                            } else {
+                                echo "No data available";
+                            }
+                        ?>
                     </div>
+                </div>
                     <canvas id="barChart_<?php echo $index; ?>" style="height: 250px;"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card shadow-lg rounded" style="border: none; transition: transform 0.2s;">
+        <div class="card shadow-sm rounded h-100 card-hover" style="border: none; transition: transform 0.2s;">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Trends</h4>
-                        <!-- Dynamic time label -->
-                        <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #555;">
-                            <?php
-                                // Assuming you're extracting the time labels from $locationData
-                                if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
-                                    // Get the latest time label for display
-                                    $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
-                                    echo htmlspecialchars($latestTimeLabel);
-                                } else {
-                                    echo "No data available";
-                                }
-                            ?>
-                        </div>
+                <div class="d-flex justify-content-between align-items-start">
+                    <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Trends</h4>
+                    <!-- Dynamic time label with improved readability -->
+                    <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #666; font-weight: bold;">
+                        <?php
+                            // Assuming you're extracting the time labels from $locationData
+                            if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
+                                // Get the latest time label for display
+                                $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
+
+                                // Format the time in a human-readable way
+                                $formattedTimeLabel = date("F j, Y, g:i A", strtotime($latestTimeLabel));
+
+                                // Display the formatted time with a tooltip for full date-time
+                                echo '<span data-toggle="tooltip" title="Full Time: ' . htmlspecialchars($latestTimeLabel) . '">' . htmlspecialchars($formattedTimeLabel) . '</span>';
+                            } else {
+                                echo "No data available";
+                            }
+                        ?>
                     </div>
+                </div>
                     <canvas id="lineChart_<?php echo $index; ?>" style="height: 250px;"></canvas>
                 </div>
             </div>
         </div>
+
 
         <script>
             // Bar Chart Rendering
@@ -365,7 +278,6 @@ $noDataMessage = empty($locations) ? "No data available for the selected time in
 </div>
 
 
-
         <!-- Pagination Links -->
 <div class="d-flex justify-content-between align-items-center mt-4">
     <div>
@@ -402,6 +314,13 @@ $noDataMessage = empty($locations) ? "No data available for the selected time in
 
     </div>
     </main>
+
+    <!-- Include Bootstrap's tooltip initialization -->
+<script>
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
 
     <!-- ======= Footer ======= -->
     <?php include '../components/footer.php'; ?>

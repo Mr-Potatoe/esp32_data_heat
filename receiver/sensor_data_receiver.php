@@ -1,6 +1,6 @@
 <?php
 // Include the config.php file
-require 'config.php'; // Adjust the path if needed
+require '../config.php'; // Adjust the path if needed
 
 // Load environment variables
 loadEnv();

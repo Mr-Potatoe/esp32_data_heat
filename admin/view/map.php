@@ -19,6 +19,7 @@
             border-radius: 10px; /* Rounded corners */
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* Shadow for depth */
             position: relative; /* For positioning legend */
+            z-index: 500;
         }
         .custom-tooltip {
             padding: 10px;
@@ -47,7 +48,7 @@
             position: absolute;
             top: 20px; /* Adjusted positioning */
             right: 20px; /* Adjusted positioning */
-            z-index: 1000; /* Ensure it is on top */
+            z-index: 500; /* Ensure it is on top */
             width: 200px; /* Fixed width for the legend */
         }
         .legend-item {
@@ -133,7 +134,7 @@
 
         // Function to fetch and update heatmap data
         function fetchSensorData() {
-            fetch('../../fetch_sensor_data.php') // Fetch data from your PHP script
+            fetch('../../fetch_php/data_fetch_map.php') // Fetch data from your PHP script
                 .then(response => response.json())
                 .then(data => {
                     const heatData = data.map(sensor => {
