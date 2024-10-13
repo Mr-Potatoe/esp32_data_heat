@@ -123,6 +123,24 @@ $conn = dbConnect();
 
         <!-- Alerts Table with hover effect and responsive design -->
         <h3 class="text-center mb-2">Detailed Alerts</h3> <!-- Table label -->
+                    <!-- Legend -->
+<div class="legend">
+    <div>
+        <div class="legend-color normal"></div> Not Hazardous (&lt; 27°C)
+    </div>
+    <div>
+        <div class="legend-color caution"></div> Caution (27°C - 32°C)
+    </div>
+    <div>
+        <div class="legend-color extreme-caution"></div> Extreme Caution (33°C - 41°C)
+    </div>
+    <div>
+        <div class="legend-color danger"></div> Danger (42°C - 51°C)
+    </div>
+    <div>
+        <div class="legend-color extreme-danger"></div> Extreme Danger (&ge; 52°C)
+    </div>
+</div>
         <table>
             <thead>
                 <tr>
@@ -176,39 +194,54 @@ $conn = dbConnect();
 
         </table>
 
-        <!-- Pagination -->
-        <nav aria-label="Page navigation">
-            <ul class="pagination justify-content-center">
-                <!-- Previous button -->
-                <li class="page-item <?php if($page <= 1){ echo 'disabled'; } ?>">
-                    <a class="page-link" href="?page=<?php echo $page - 1; ?>" aria-label="Previous">
-                        Previous
-                    </a>
-                </li>
+    <!-- Pagination -->
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        <!-- First button -->
+        <li class="page-item <?php if ($page <= 1) { echo 'disabled'; } ?>">
+            <a class="page-link" href="?page=1" aria-label="First">
+                First
+            </a>
+        </li>
 
-                <?php
-                // Define the range of pages to display
-                $range = 2;
+        <!-- Previous button -->
+        <li class="page-item <?php if ($page <= 1) { echo 'disabled'; } ?>">
+            <a class="page-link" href="?page=<?php echo $page - 1; ?>" aria-label="Previous">
+                Previous
+            </a>
+        </li>
 
-                // Calculate start and end page numbers
-                $startPage = max(1, $page - $range);
-                $endPage = min($totalPages, $page + $range);
+        <?php
+        // Define the range of pages to display
+        $range = 2;
 
-                // Loop through the pages within the range
-                for ($i = $startPage; $i <= $endPage; $i++): ?>
-                    <li class="page-item <?php if($page == $i){ echo 'active'; } ?>">
-                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                    </li>
-                <?php endfor; ?>
+        // Calculate start and end page numbers
+        $startPage = max(1, $page - $range);
+        $endPage = min($totalPages, $page + $range);
 
-                <!-- Next button -->
-                <li class="page-item <?php if($page >= $totalPages){ echo 'disabled'; } ?>">
-                    <a class="page-link" href="?page=<?php echo $page + 1; ?>" aria-label="Next">
-                        Next
-                    </a>
-                </li>
-            </ul>
-        </nav>
+        // Loop through the pages within the range
+        for ($i = $startPage; $i <= $endPage; $i++): ?>
+            <li class="page-item <?php if ($page == $i) { echo 'active'; } ?>">
+                <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+            </li>
+        <?php endfor; ?>
+
+        <!-- Next button -->
+        <li class="page-item <?php if ($page >= $totalPages) { echo 'disabled'; } ?>">
+            <a class="page-link" href="?page=<?php echo $page + 1; ?>" aria-label="Next">
+                Next
+            </a>
+        </li>
+
+        <!-- Last button -->
+        <li class="page-item <?php if ($page >= $totalPages) { echo 'disabled'; } ?>">
+            <a class="page-link" href="?page=<?php echo $totalPages; ?>" aria-label="Last">
+                Last
+            </a>
+        </li>
+    </ul>
+</nav>
+
 
         <!-- Total pages label -->
         <div class="total-pages-label text-center mt-2">

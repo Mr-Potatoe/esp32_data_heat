@@ -214,6 +214,11 @@ $conn = dbConnect();
     </table>
     <nav aria-label="Page navigation">
     <ul class="pagination justify-content-center">
+        <!-- First Button -->
+        <li class="page-item <?= ($currentPage == 1) ? 'disabled' : '' ?>">
+            <a href="?page=1&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link">First</a>
+        </li>
+
         <!-- Previous Button -->
         <li class="page-item <?= ($currentPage == 1) ? 'disabled' : '' ?>">
             <a href="?page=<?= max(1, $currentPage - 1) ?>&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link">Previous</a>
@@ -246,8 +251,14 @@ $conn = dbConnect();
         <li class="page-item <?= ($currentPage == $totalPages) ? 'disabled' : '' ?>">
             <a href="?page=<?= min($totalPages, $currentPage + 1) ?>&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link">Next</a>
         </li>
+
+        <!-- Last Button -->
+        <li class="page-item <?= ($currentPage == $totalPages) ? 'disabled' : '' ?>">
+            <a href="?page=<?= $totalPages ?>&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link">Last</a>
+        </li>
     </ul>
 </nav>
+
 
 
 
