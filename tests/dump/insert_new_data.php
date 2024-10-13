@@ -5,20 +5,36 @@ $conn = dbConnect(); // Connect to the database
 
 // Define the new location parameters
 $sensor_id = 14; // Use the sensor_id assigned above
-$latitude = 7.336327;
-$longitude = 123.383421;
-$location_name = 'Mars';
+$latitude = 7.9473004;
+$longitude = 123.5876167;
+$location_name = 'Neptune';
 
 // Prepare to insert data for the last 24 hours
 $currentTime = new DateTime(); // Get the current time
 
+// Simulate a more realistic trend for temperature and humidity over 24 hours
+$base_temperature_day = 30; // Average daytime temperature
+$base_temperature_night = 22; // Average nighttime temperature
+$base_humidity_day = 60; // Average daytime humidity
+$base_humidity_night = 75; // Average nighttime humidity
+
 for ($i = 0; $i < 24; $i++) {
-    // Generate random temperature, humidity, heat index, and alert level
-    $temperature = rand(25, 35); // Random temperature between 25°C and 35°C
-    $humidity = rand(50, 80); // Random humidity between 50% and 80%
+    // Calculate the current hour in the loop (24-hour clock format)
+    $currentHour = (int)$currentTime->format('H');
+
+    // Simulate temperature variation between day and night
+    if ($currentHour >= 6 && $currentHour <= 18) {
+        // Daytime (6 AM to 6 PM)
+        $temperature = $base_temperature_day + rand(-2, 2); // Slight fluctuations during the day
+        $humidity = $base_humidity_day + rand(-5, 5); // Humidity fluctuates less during the day
+    } else {
+        // Nighttime (6 PM to 6 AM)
+        $temperature = $base_temperature_night + rand(-2, 2); // Slight fluctuations during the night
+        $humidity = $base_humidity_night + rand(-5, 5); // Humidity is typically higher at night
+    }
 
     // Calculate heat index using the formula
-    $heat_index = $temperature + (0.55 - 0.55 * (0.01 * $humidity)) * ($temperature - 14.5); 
+    $heat_index = $temperature + (0.55 - 0.55 * (0.01 * $humidity)) * ($temperature - 14.5);
 
     // Determine alert level based on the heat index
     if ($heat_index < 27) {
@@ -52,5 +68,5 @@ for ($i = 0; $i < 24; $i++) {
 $stmt->close();
 $conn->close();
 
-echo "Inserted 24 hours of data for $location_name.";
+echo "Inserted 24 hours of realistic data for $location_name.";
 ?>

@@ -1,6 +1,9 @@
 <?php
 // config.php
 
+// Set timezone to Philippines
+date_default_timezone_set('Asia/Manila');
+
 // Load environment variables from .env
 function loadEnv() {
     require __DIR__ . '/vendor/autoload.php';

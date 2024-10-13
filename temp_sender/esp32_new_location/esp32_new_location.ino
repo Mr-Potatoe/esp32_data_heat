@@ -4,25 +4,34 @@
 #include <DHT.h>
 
 // WiFi credentials
-const char *ssid = "FTTH 5G";
-const char *password = "Slark123";
+const char *ssid = "Mr.Potatoe";
+const char *password = "passwordno";
 
 // Server URL
-const char *serverUrl = "http://192.168.1.45/esp32_data_heat/receiver/sensor_data_receiver.php";  // Replace with your XAMPP server IP
+const char *serverUrl = "http://192.168.217.111/esp32_data_heat/receiver/sensor_data_receiver.php";  // Replace with your XAMPP server IP
 
 DHT dht(26, DHT11);
 
 // Sensor coordinates (Latitude, Longitude)
-const char *sensorLatitude = "7.952333";    // Replace with actual latitude
-const char *sensorLongitude = "123.521333"; // Replace with actual longitude
-const int sensor_id = 2; // Define your sensor ID (it can be any unique number)
+const char *sensorLatitude = "7.947618";    // Replace with actual latitude
+const char *sensorLongitude = "123.588354"; // Replace with actual longitude
+const int sensor_id = 69; // Define your sensor ID (it can be any unique number)
 
 // Sensor location name
-const char *sensorLocationName = "Venus"; // Add the location name here
+const char *sensorLocationName = "Mariana"; // Add the location name here
+
+// Status variable
+const char *status = "active"; // Set status to active
+
+const int buzzerPin = 13;  // Buzzer connected to GPIO 13
 
 void setup() {
   Serial.begin(115200);
   dht.begin();
+  
+  // Initialize buzzer pin
+  pinMode(buzzerPin, OUTPUT);
+  digitalWrite(buzzerPin, LOW); // Make sure buzzer is off initially
 
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -40,15 +49,23 @@ void loop() {
     float temperature = dht.readTemperature();
     float humidity = dht.readHumidity();
 
+    // Check if the readings are valid
     if (!isnan(temperature) && !isnan(humidity)) {
       // Calculate Heat Index using the PAGASA formula
       float heatIndex = calculateHeatIndex(temperature, humidity);
       String alertLevel = determineAlertLevel(heatIndex);
 
+      // Check heat index and activate buzzer if needed
+      if (heatIndex > 40) {
+        activateBuzzer();  // Activate the buzzer
+      } else {
+        deactivateBuzzer(); // Deactivate the buzzer if below the threshold
+      }
+
       http.begin(serverUrl);  // Specify the server URL
       http.addHeader("Content-Type", "application/x-www-form-urlencoded");  // Set header for POST request
 
-      // Create POST data including sensor location name, sensor coordinates, and alert
+      // Create POST data including sensor location name, sensor coordinates, alert, and status
       String postData = "sensor_id=" + String(sensor_id) + // include the sensor ID
                         "&temperature=" + String(temperature) +
                         "&humidity=" + String(humidity) +
@@ -56,7 +73,8 @@ void loop() {
                         "&alert=" + alertLevel +
                         "&latitude=" + String(sensorLatitude) +
                         "&longitude=" + String(sensorLongitude) +
-                        "&location_name=" + String(sensorLocationName); // Include location name
+                        "&location_name=" + String(sensorLocationName) + // Include location name
+                        "&status=" + String(status); // Include status
 
       // Send the POST request
       int httpResponseCode = http.POST(postData);
@@ -70,6 +88,8 @@ void loop() {
       }
 
       http.end();  // Close connection
+    } else {
+      Serial.println("Failed to read from DHT sensor.");
     }
 
   } else {
@@ -104,3 +124,13 @@ String determineAlertLevel(float heatIndex) {
     return "Extreme Danger";
   }
 }
+
+// Function to activate the buzzer
+void activateBuzzer() {
+  tone(buzzerPin, 1000);  // Generate a 1000 Hz tone
+}
+
+void deactivateBuzzer() {
+  noTone(buzzerPin);  // Stop the tone
+}
+

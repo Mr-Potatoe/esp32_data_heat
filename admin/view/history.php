@@ -17,7 +17,7 @@ $conn = dbConnect();
 <head>
     <?php include '../components/head.php'; ?>
     <link rel="stylesheet" href="../../assets/css/page.css">
-    <style>
+<style>
 
 .card {
     background-color: #f8f9fa; /* Light background for the card */
@@ -56,6 +56,23 @@ $conn = dbConnect();
             align-items: center;
             gap: 8px;
         }
+        .dropdown-icon-wrapper {
+    position: relative;
+}
+
+.dropdown-icon-wrapper select {
+    padding-right: 30px; /* Add space for the icon */
+}
+
+.dropdown-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none; /* Prevent the icon from blocking clicks on the dropdown */
+}
+
+
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
@@ -72,34 +89,49 @@ $conn = dbConnect();
             <h1>Heatmap Table Data by Location</h1>
 
     
-        <!-- Filter Form -->
-        <div class="card p-3 mb-4">
-            <h5 class="card-title">Filter Data</h5>
-            <form method="GET" class="form-inline">
-                <div class="form-group ">
-                    <label for="filter" class="mr-2">Select Time Filter:</label>
-                    <select id="filter" name="filter" class="form-control" onchange="this.form.submit()">
-                        <option value="hourly" <?= $filterType == 'hourly' ? 'selected' : '' ?>>Hourly</option>
-                        <option value="daily" <?= $filterType == 'daily' ? 'selected' : '' ?>>Daily</option>
-                        <option value="weekly" <?= $filterType == 'weekly' ? 'selected' : '' ?>>Weekly</option>
-                        <option value="monthly" <?= $filterType == 'monthly' ? 'selected' : '' ?>>Monthly</option>
-                        <option value="yearly" <?= $filterType == 'yearly' ? 'selected' : '' ?>>Yearly</option>
-                    </select>
-                </div>
 
-                <div class="form-group ">
-                    <label for="start_date" class="mr-2">Start Date and Time:</label>
-                    <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?= htmlspecialchars($startDate) ?>" >
-                </div>
+<div class="card p-3 mb-4 filter-form">
+    <h5 class="card-title">Filter Data</h5>
+    <form method="GET">
+        <div class="form-row d-flex flex-wrap">
+<!-- Time Filter Dropdown with Icon -->
+<div class="form-group col-md-4 col-sm-12">
+    <label for="filter" class="mr-2">Select Time Filter:</label>
+    <div class="dropdown-icon-wrapper">
+        <select id="filter" name="filter" class="form-control">
+            <option value="hourly" <?= $filterType == 'hourly' ? 'selected' : '' ?>>Hourly</option>
+            <option value="daily" <?= $filterType == 'daily' ? 'selected' : '' ?>>Daily</option>
+            <option value="weekly" <?= $filterType == 'weekly' ? 'selected' : '' ?>>Weekly</option>
+            <option value="monthly" <?= $filterType == 'monthly' ? 'selected' : '' ?>>Monthly</option>
+            <option value="yearly" <?= $filterType == 'yearly' ? 'selected' : '' ?>>Yearly</option>
+        </select>
+        <i class="fas fa-chevron-down dropdown-icon"></i> <!-- Font Awesome icon -->
+    </div>
+</div>
 
-                <div class="form-group ">
-                    <label for="end_date" class="mr-2">End Date and Time:</label>
-                    <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?= htmlspecialchars($endDate) ?>" >
-                </div>
 
-                <button type="submit" class="btn btn-primary">Filter</button>
-            </form>
+
+
+            <!-- Start Date Input -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="start_date" class="mr-2">Start Date and Time:</label>
+                <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?= htmlspecialchars($startDate) ?>">
+            </div>
+
+            <!-- End Date Input -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="end_date" class="mr-2">End Date and Time:</label>
+                <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?= htmlspecialchars($endDate) ?>">
+            </div>
         </div>
+
+        <!-- Filter Button (aligned at the bottom left) -->
+        <div class="form-group  d-flex justify-content-start">
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </div>
+    </form>
+</div>
+
 
             <!-- Legend -->
         <div class="legend">

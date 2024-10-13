@@ -15,6 +15,14 @@ $result = $conn->query($sql);
 $data = [];
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
+        // Calculate whether the sensor is active based on the alert_time
+        $alertTime = strtotime($row['alert_time']);
+        $currentTime = time();
+        $timeDiff = $currentTime - $alertTime; // Time difference in seconds
+
+        // Consider the sensor active if data was received within the last 600 seconds (10 minutes)
+        $row['active'] = ($timeDiff <= 300) ? true : false;
+
         $data[] = $row;
     }
 }

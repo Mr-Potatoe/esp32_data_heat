@@ -5,10 +5,8 @@ $conn = dbConnect(); // Connect to the database
 
 // Define the location parameters
 $locations = [
-    ['sensor_id' => 15, 'latitude' => 7.9473004, 'longitude' => 123.5876167, 'location_name' => 'First location near guardhouse'],
-    ['sensor_id' => 16, 'latitude' => 7.9480162, 'longitude' => 123.5881823, 'location_name' => 'Second location near main building right side'],
-    ['sensor_id' => 17, 'latitude' => 7.947642, 'longitude' => 123.588116, 'location_name' => '3rd location behind main hall'],
-    ['sensor_id' => 18, 'latitude' => 7.948238, 'longitude' => 123.588524, 'location_name' => '4th location near Akasya tree (left)'],
+    ['sensor_id' => 15, 'latitude' => 7.9473004, 'longitude' => 123.5876167, 'location_name' => 'Earth'],
+    ['sensor_id' => 16, 'latitude' => 7.9480162, 'longitude' => 123.5881823, 'location_name' => 'Sun'],
     // Add more locations as needed...
 ];
 
@@ -23,14 +21,17 @@ while (true) {
     $longitude = $location['longitude'];
     $location_name = $location['location_name'];
 
-    // Generate random temperature and humidity
-    // $temperature = rand(25, 35); // Random temperature between 25°C and 35°C
-    // $humidity = rand(50, 80); // Random humidity between 50% and 80%
+    // Simulate realistic temperature and humidity
+    // For instance, during the day temperatures could be higher
+    $currentHour = (int)date('H'); // Get current hour (0-23)
 
-    // Generate random temperature and humidity
-$temperature = rand(35, 45); // Higher temperature range: 35°C - 45°C
-$humidity = rand(70, 100); // Higher humidity range: 70% - 100%
-
+    if ($currentHour >= 6 && $currentHour <= 18) { // Daytime
+        $temperature = rand(28, 37); // Average daytime temperature: 28°C - 37°C
+        $humidity = rand(50, 75); // Average daytime humidity: 50% - 75%
+    } else { // Nighttime
+        $temperature = rand(22, 30); // Average nighttime temperature: 22°C - 30°C
+        $humidity = rand(70, 90); // Average nighttime humidity: 70% - 90%
+    }
 
     // Calculate heat index using the formula
     $heat_index = $temperature + (0.55 - 0.55 * (0.01 * $humidity)) * ($temperature - 14.5); 
@@ -51,17 +52,20 @@ $humidity = rand(70, 100); // Higher humidity range: 70% - 100%
     // Get the current time for alert_time
     $alert_time = date('Y-m-d H:i:s'); // Format: Y-m-d H:i:s
 
+    // Set status to 'active' for the new insertion
+    $status = 'active';
+
     // Insert into the database
-    $insertQuery = "INSERT INTO sensor_readings (sensor_id, temperature, humidity, heat_index, alert, latitude, longitude, location_name, alert_time)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $insertQuery = "INSERT INTO sensor_readings (sensor_id, temperature, humidity, heat_index, alert, latitude, longitude, location_name, alert_time, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($insertQuery);
-    $stmt->bind_param('iddssddss', $sensor_id, $temperature, $humidity, $heat_index, $alert, $latitude, $longitude, $location_name, $alert_time);
+    $stmt->bind_param('iddssddsss', $sensor_id, $temperature, $humidity, $heat_index, $alert, $latitude, $longitude, $location_name, $alert_time, $status);
     
     if (!$stmt->execute()) {
         echo "Error inserting data: " . $stmt->error . "\n";
     } else {
-        echo "Inserted data for $location_name: Temperature: $temperature, Humidity: $humidity%, Heat Index: $heat_index, Alert: $alert\n";
+        echo "Inserted data for $location_name: Temperature: $temperature, Humidity: $humidity%, Heat Index: $heat_index, Alert: $alert, Status: $status\n";
     }
 
     // Wait for 5 seconds before the next iteration

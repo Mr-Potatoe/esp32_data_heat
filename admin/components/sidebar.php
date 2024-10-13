@@ -9,6 +9,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         $menu_items = [
             ['link' => 'dashboard.php', 'icon' => 'bi-house', 'label' => 'Dashboard'],
             ['link' => 'map.php', 'icon' => 'bi-map', 'label' => 'Heat Index Map'],
+            ['link' => 'sensor_status.php', 'icon' => 'bi-tools', 'label' => 'View Sensor Status'],
             ['link' => 'view_sensors.php', 'icon' => 'bi-tools', 'label' => 'View Sensors Data'],
             ['link' => 'history.php', 'icon' => 'bi-clock-history', 'label' => 'Heat Index History'],
             ['link' => 'alerts.php', 'icon' => 'bi-exclamation-triangle', 'label' => 'Alerts'],

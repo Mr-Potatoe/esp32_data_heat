@@ -1,6 +1,6 @@
 <?php
 // Fetch total number of alerts (this was previously missing)
-$queryTotalAlerts = "SELECT COUNT(*) AS total_alerts FROM sensor_readings WHERE alert IS NOT NULL";
+$queryTotalAlerts = "SELECT COUNT(*) AS total_alerts FROM sensor_readings WHERE alert IS NOT NULL AND alert_time >= NOW() - INTERVAL 1 DAY";
 $totalAlertsResult = $conn->query($queryTotalAlerts);
 $totalAlertsData = $totalAlertsResult->fetch_assoc(); // This will contain total_alerts
 

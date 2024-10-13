@@ -22,8 +22,12 @@ $startLimit = ($currentPage - 1) * $resultsPerPage;
 // Fetch all unique location names
 $locations = $conn->query("SELECT DISTINCT location_name FROM sensor_readings")->fetch_all(MYSQLI_ASSOC);
 
+
+
 // Get the selected location and date range from the dropdown and filters
 $selectedLocation = isset($_GET['location_name']) ? $_GET['location_name'] : '';
+
+// Default start date to 1 day ago and end date to the current Philippine time
 $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d\TH:i', strtotime('-1 day'));
 $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d\TH:i');
 

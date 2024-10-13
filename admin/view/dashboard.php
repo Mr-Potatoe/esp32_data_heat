@@ -94,65 +94,57 @@ $conn = dbConnect(); // Connect to the database
 
       <!-- Individual Bar and Line Charts for Each Location -->
       <div id="charts" class="row">
-    <?php foreach ($locations as $index => $locationName): ?>
+    <?php 
+    // Reverse the locations array to render the latest data first
+    $reversedLocations = array_reverse($locations);
+    
+    foreach ($reversedLocations as $index => $locationName): 
+    ?>
         <div class="col-lg-6 col-md-12 mb-4">
-        <div class="card shadow-sm rounded h-100 card-hover" style="border: none; transition: transform 0.2s;">
+            <div class="card shadow-sm rounded h-100 card-hover" style="border: none; transition: transform 0.2s;">
                 <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Average Readings</h4>
-                    <!-- Dynamic time label with improved readability -->
-                    <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #666; font-weight: bold;">
-                        <?php
-                            // Assuming you're extracting the time labels from $locationData
-                            if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
-                                // Get the latest time label for display
-                                $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
-
-                                // Format the time in a more human-readable way
-                                $formattedTimeLabel = date("F j, Y, g:i A", strtotime($latestTimeLabel));
-
-                                // Display the formatted time with a tooltip for full date-time
-                                echo '<span data-toggle="tooltip" title="Full Time: ' . htmlspecialchars($latestTimeLabel) . '">' . htmlspecialchars($formattedTimeLabel) . '</span>';
-                            } else {
-                                echo "No data available";
-                            }
-                        ?>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Average Readings</h4>
+                        <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #666; font-weight: bold;">
+                            <?php
+                                // Display the latest time label for the location
+                                if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
+                                    $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
+                                    $formattedTimeLabel = date("F j, Y, g:i A", strtotime($latestTimeLabel));
+                                    echo '<span data-toggle="tooltip" title="Full Time: ' . htmlspecialchars($latestTimeLabel) . '">' . htmlspecialchars($formattedTimeLabel) . '</span>';
+                                } else {
+                                    echo "No data available";
+                                }
+                            ?>
+                        </div>
                     </div>
-                </div>
                     <canvas id="barChart_<?php echo $index; ?>" style="height: 250px;"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-6 col-md-12 mb-4">
-        <div class="card shadow-sm rounded h-100 card-hover" style="border: none; transition: transform 0.2s;">
+            <div class="card shadow-sm rounded h-100 card-hover" style="border: none; transition: transform 0.2s;">
                 <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Trends</h4>
-                    <!-- Dynamic time label with improved readability -->
-                    <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #666; font-weight: bold;">
-                        <?php
-                            // Assuming you're extracting the time labels from $locationData
-                            if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
-                                // Get the latest time label for display
-                                $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
-
-                                // Format the time in a human-readable way
-                                $formattedTimeLabel = date("F j, Y, g:i A", strtotime($latestTimeLabel));
-
-                                // Display the formatted time with a tooltip for full date-time
-                                echo '<span data-toggle="tooltip" title="Full Time: ' . htmlspecialchars($latestTimeLabel) . '">' . htmlspecialchars($formattedTimeLabel) . '</span>';
-                            } else {
-                                echo "No data available";
-                            }
-                        ?>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Trends</h4>
+                        <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #666; font-weight: bold;">
+                            <?php
+                                // Display the latest time label for the location
+                                if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
+                                    $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
+                                    $formattedTimeLabel = date("F j, Y, g:i A", strtotime($latestTimeLabel));
+                                    echo '<span data-toggle="tooltip" title="Full Time: ' . htmlspecialchars($latestTimeLabel) . '">' . htmlspecialchars($formattedTimeLabel) . '</span>';
+                                } else {
+                                    echo "No data available";
+                                }
+                            ?>
+                        </div>
                     </div>
-                </div>
                     <canvas id="lineChart_<?php echo $index; ?>" style="height: 250px;"></canvas>
                 </div>
             </div>
         </div>
-
 
         <script>
             // Bar Chart Rendering
@@ -276,6 +268,7 @@ $conn = dbConnect(); // Connect to the database
         </script>
     <?php endforeach; ?>
 </div>
+
 
 
         <!-- Pagination Links -->

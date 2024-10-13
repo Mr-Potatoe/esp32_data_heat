@@ -1,5 +1,8 @@
 <?php
 
+// Set timezone to Philippines
+date_default_timezone_set('Asia/Manila');
+
 // Pagination variables
 $locationsPerPage = 2; // Number of location tables per page
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1; // Current page number

@@ -164,7 +164,7 @@ $conn = dbConnect();
 
                     // Format the alert time
                     $date = new DateTime($row['alert_time']);
-                    echo "<td>" . htmlspecialchars($date->format('F j, Y g:i:s A')) . "</td>"; // Example: October 10, 2024 03:45 PM
+                    echo "<td>" . htmlspecialchars($date->format('F j, Y g:i:s A')) . "</td>"; 
 
                     echo "</tr>";
                 }

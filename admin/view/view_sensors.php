@@ -125,8 +125,13 @@ $conn = dbConnect();
             <td><?= htmlspecialchars($row['humidity']) ?></td>
             <td><?= htmlspecialchars($row['heat_index']) ?></td>
             <td><?= htmlspecialchars($row['alert_level']) ?></td>
-            <td><?= htmlspecialchars(date('Y-m-d H:i:s', strtotime($row['alert_time']))) ?></td>
-        </tr>
+            <td>
+      <?php 
+        $date = new DateTime($row['alert_time']);
+        echo htmlspecialchars($date->format('F j, Y g:i:s A'));
+    ?>
+</td>
+ </tr>
     <?php endwhile; ?>
 <?php else: ?>
     <tr>

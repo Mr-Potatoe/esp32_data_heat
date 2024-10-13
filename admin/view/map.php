@@ -132,76 +132,80 @@
         // Layer group for tooltips
         const markerLayer = L.layerGroup().addTo(map);
 
-        // Function to fetch and update heatmap data
-        function fetchSensorData() {
-            fetch('../../fetch_php/data_fetch_map.php') // Fetch data from your PHP script
-                .then(response => response.json())
-                .then(data => {
-                    const heatData = data.map(sensor => {
-                        const { latitude, longitude, heat_index } = sensor;
-                        return [parseFloat(latitude), parseFloat(longitude), heat_index / 50]; // Adjust intensity
-                    });
+    // Function to fetch and update heatmap data
+function fetchSensorData() {
+    fetch('../../fetch_php/fetch_map_data.php') // Fetch data from your PHP script
+        .then(response => response.json())
+        .then(data => {
+            const heatData = data.map(sensor => {
+                const { latitude, longitude, heat_index } = sensor;
+                return [parseFloat(latitude), parseFloat(longitude), heat_index / 50]; // Adjust intensity
+            });
 
-                    // Clear the current heatmap and markers
-                    heat.setLatLngs([]);
-                    markerLayer.clearLayers();
+            // Clear the current heatmap and markers
+            heat.setLatLngs([]);
+            markerLayer.clearLayers();
 
-                    // Update heatmap
-                    heat.setLatLngs(heatData);
+            // Update heatmap
+            heat.setLatLngs(heatData);
 
-                    // Add markers with tooltips
-                    data.forEach(sensor => {
-                        const { latitude, longitude, heat_index, temperature, humidity, alert, location_name, alert_time } = sensor;
-                        const lat = parseFloat(latitude);
-                        const lng = parseFloat(longitude);
+            // Add markers with tooltips
+            data.forEach(sensor => {
+                const { latitude, longitude, heat_index, temperature, humidity, alert, location_name, alert_time, active } = sensor;
+                const lat = parseFloat(latitude);
+                const lng = parseFloat(longitude);
 
-                        const marker = L.circleMarker([lat, lng], {
-                            radius: 10,
-                            color: 'transparent',
-                            fillOpacity: 0
-                        }).addTo(markerLayer);
+                const marker = L.circleMarker([lat, lng], {
+                    radius: 10,
+                    color: 'transparent',
+                    fillOpacity: 0
+                }).addTo(markerLayer);
 
-                        // Determine alert class based on PAGASA standards
-                        let alertClass = '';
-                        switch (alert) {
-                            case 'Not Hazardous':
-                                alertClass = 'alert-normal';
-                                break;
-                            case 'Caution':
-                                alertClass = 'alert-caution';
-                                break;
-                            case 'Extreme Caution':
-                                alertClass = 'alert-extreme-caution';
-                                break;
-                            case 'Danger':
-                                alertClass = 'alert-danger';
-                                break;
-                            case 'Extreme Danger':
-                                alertClass = 'alert-extreme-danger';
-                                break;
-                            default:
-                                alertClass = 'alert-normal'; // Default case
-                        }
+                // Determine alert class based on PAGASA standards
+                let alertClass = '';
+                switch (alert) {
+                    case 'Not Hazardous':
+                        alertClass = 'alert-normal';
+                        break;
+                    case 'Caution':
+                        alertClass = 'alert-caution';
+                        break;
+                    case 'Extreme Caution':
+                        alertClass = 'alert-extreme-caution';
+                        break;
+                    case 'Danger':
+                        alertClass = 'alert-danger';
+                        break;
+                    case 'Extreme Danger':
+                        alertClass = 'alert-extreme-danger';
+                        break;
+                    default:
+                        alertClass = 'alert-normal'; // Default case
+                }
 
-                        // Bind tooltip to show sensor details with alert level background color
-                        marker.bindTooltip(`
-                            <div class="custom-tooltip">
-                                <strong>Location:</strong> ${location_name}<br>
-                                <strong>Alert Level:</strong> <span class="${alertClass}">${alert}</span><br>
-                                <strong>Heat Index:</strong> ${heat_index} °C<br>
-                                <strong>Temperature:</strong> ${temperature} °C<br>
-                                <strong>Humidity:</strong> ${humidity}%<br>
-                                <strong>Last Update:</strong> ${alert_time}
-                            </div>
-                        `, { className: 'custom-tooltip', direction: 'top', offset: [0, -10] });
-                    });
-                })
-                .catch(error => console.error('Error fetching sensor data:', error));
-        }
+                // Determine the active status
+                let activeStatus = active ? 'Active' : 'Inactive';
+
+                // Bind tooltip to show sensor details with alert level background color
+                marker.bindTooltip(`
+                    <div class="custom-tooltip">
+                        <strong>Location:</strong> ${location_name}<br>
+                        <strong>Alert Level:</strong> <span class="${alertClass}">${alert}</span><br>
+                        <strong>Heat Index:</strong> ${heat_index} °C<br>
+                        <strong>Temperature:</strong> ${temperature} °C<br>
+                        <strong>Humidity:</strong> ${humidity}%<br>
+                        <strong>Last Update:</strong> ${alert_time}<br>
+                        <strong>Status:</strong> ${activeStatus}
+                    </div>
+                `, { className: 'custom-tooltip', direction: 'top', offset: [0, -10] });
+            });
+        })
+        .catch(error => console.error('Error fetching sensor data:', error));
+}
 
         // Fetch sensor data and update heatmap every 60 seconds
         fetchSensorData();
-        setInterval(fetchSensorData, 60000);
+        setInterval(fetchSensorData, 5000);
     </script>
     <!-- ======= Footer ======= -->
 <?php include '../components/footer.php'; ?>
