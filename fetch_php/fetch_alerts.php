@@ -24,9 +24,10 @@ $locationSummaryData = $locationSummaryResult->fetch_assoc();
 // Fetch chart data (alerts by location)
 $queryChart = "SELECT location_name, COUNT(*) AS alert_count 
                FROM sensor_readings 
-               WHERE alert IS NOT NULL 
+               WHERE alert IS NOT NULL AND alert_time >= NOW() - INTERVAL 1 DAY
                GROUP BY location_name 
                ORDER BY alert_count DESC";
+
 $chartResult = $conn->query($queryChart);
 
 // Pagination logic
@@ -37,9 +38,10 @@ $offset = ($page - 1) * $limit;
 // Fetch detailed alerts with pagination
 $query = "SELECT location_name, latitude, longitude, temperature, humidity, heat_index, alert, alert_time 
           FROM sensor_readings 
-          WHERE alert IS NOT NULL 
+          WHERE alert IS NOT NULL AND alert_time >= NOW() - INTERVAL 1 DAY 
           ORDER BY alert_time DESC 
           LIMIT $limit OFFSET $offset";
+
 $result = $conn->query($query);
 
 // Count total number of records

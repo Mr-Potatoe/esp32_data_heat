@@ -1,7 +1,7 @@
 <?php
 
 // Define how many charts to show per page
-$chartsPerPage = 2; // Adjust this value to control the number of charts displayed per page
+$chartsPerPage = 100; // Adjust this value to control the number of charts displayed per page
 
 // Get the current page from the URL, default to 1 if not set
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -104,6 +104,6 @@ if ($result_time_series->num_rows > 0) {
 }
 
 // Display message if no data is available
-$noDataMessage = empty($locations) ? "No data available for the selected time interval." : "";
+$noDataMessage = empty($locations) ? "No data available" : "";
 
 ?>

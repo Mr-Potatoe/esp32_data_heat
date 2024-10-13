@@ -53,6 +53,43 @@ $conn = dbConnect();
         font-weight: bold;
         color: #333;
     }
+
+    /*Custom CSS for Dropdown Icon */
+
+    .dropdown-icon-wrapper {
+        position: relative;
+    }
+
+    .dropdown-icon {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+
+    .card {
+    background-color: #f8f9fa; /* Light background for the card */
+    border: 1px solid #e1e1e1; /* Soft border */
+    border-radius: 5px; /* Rounded corners */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.card-title {
+    font-weight: bold; /* Bold title for emphasis */
+    margin-bottom: 1rem; /* Space below the title */
+}
+
+.form-inline {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping for small screens */
+}
+
+.form-group {
+    flex: 1; /* Each form group takes equal space */
+    min-width: 250px; /* Ensure inputs have a minimum width */
+}
+
 </style>
 </head>
 <body>
@@ -67,50 +104,80 @@ $conn = dbConnect();
 <div class="container">
     <h2>Sensor Data View</h2>
     <!-- Legend -->
-    <div class="legend">
-    <div><div class="legend-color normal"></div>Normal (&lt;27°C)</div>
-    <div><div class="legend-color caution"></div>Caution (27°C - 32°C)</div>
-    <div><div class="legend-color extreme-caution"></div>Extreme Caution (32°C - 41°C)</div>
-    <div><div class="legend-color danger"></div>Danger (41°C - 54°C)</div>
-    <div><div class="legend-color extreme-danger"></div>Extreme Danger (&gt;54°C)</div>
+<div class="legend">
+    <div>
+        <div class="legend-color normal"></div> Not Hazardous (&lt; 27°C)
+    </div>
+    <div>
+        <div class="legend-color caution"></div> Caution (27°C - 32°C)
+    </div>
+    <div>
+        <div class="legend-color extreme-caution"></div> Extreme Caution (33°C - 41°C)
+    </div>
+    <div>
+        <div class="legend-color danger"></div> Danger (42°C - 51°C)
+    </div>
+    <div>
+        <div class="legend-color extreme-danger"></div> Extreme Danger (&ge; 52°C)
+    </div>
 </div>
 
-<form method="GET" class="mb-4">
-    <div class="form-group">
-        <label for="location_name">Select Location Name:</label>
-        <select name="location_name" id="location_name" class="form-control" onchange="this.form.submit()">
-            <option value="">-- All Locations --</option>
-            <?php foreach ($locations as $location): ?>
-                <option value="<?= $location['location_name'] ?>" <?= ($selectedLocation == $location['location_name']) ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($location['location_name']) ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </div>
 
-    <div class="form-group">
-        <label for="start_date">Start Date and Time:</label>
-        <input type="datetime-local" name="start_date" id="start_date" value="<?php echo isset($_GET['start_date']) ? $_GET['start_date'] : ''; ?>" class="form-control" onchange="this.form.submit()">
-    </div>
 
-    <div class="form-group">
-        <label for="end_date">End Date and Time:</label>
-        <input type="datetime-local" name="end_date" id="end_date" value="<?php echo isset($_GET['end_date']) ? $_GET['end_date'] : ''; ?>" class="form-control" onchange="this.form.submit()">
-    </div>
+<div class="card p-3 mb-4 filter-form">
+    <h5 class="card-title">Filter by Location</h5>
+    <form method="GET">
+        <div class="form-row d-flex flex-wrap">
+            <!-- Location Name Dropdown -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="location_name">Select Location Name:</label>
+                <div class="dropdown-icon-wrapper">
+                    <select name="location_name" id="location_name" class="form-control" onchange="this.form.submit()">
+                        <option value="">-- All Locations --</option>
+                        <?php foreach ($locations as $location): ?>
+                            <option value="<?= htmlspecialchars($location['location_name']) ?>" <?= ($selectedLocation == $location['location_name']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($location['location_name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <i class="fas fa-chevron-down dropdown-icon"></i> <!-- Font Awesome icon -->
+                </div>
+            </div>
 
-    <button type="submit" class="btn btn-primary">Filter</button>
-</form>
+            <!-- Start Date Input -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="start_date">Start Date and Time:</label>
+                <input type="datetime-local" name="start_date" id="start_date" value="<?= htmlspecialchars($startDate); ?>" class="form-control" onchange="this.form.submit()">
+            </div>
+
+            <!-- End Date Input -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="end_date">End Date and Time:</label>
+                <input type="datetime-local" name="end_date" id="end_date" value="<?= htmlspecialchars($endDate); ?>" class="form-control" onchange="this.form.submit()">
+            </div>
+
+        </div>
+
+        <!-- Filter Button -->
+        <div class="d-flex justify-content-start">
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </div>
+    </form>
+</div>
+
+
+
 
 
 
     <table>
         <thead>
             <tr>
-                <th>Sensor ID</th>
+                <!-- <th>Sensor ID</th> -->
                 <th>Location Name</th>
                 <th>Temperature (°C)</th>
                 <th>Humidity (%)</th>
-                <th>Heat Index</th>
+                <th>Heat Index (°C)</th>
                 <th>Alert Level</th>
                 <th>Alert Time</th>
             </tr>
@@ -118,27 +185,31 @@ $conn = dbConnect();
         <tbody>
 <?php if ($result->num_rows > 0): ?>
     <?php while ($row = $result->fetch_assoc()): ?>
-        <tr class="<?= getAlertClass($row['heat_index']) ?>">
-            <td><?= htmlspecialchars($row['sensor_id']) ?></td>
+        <?php 
+            // Get the alert level text and class using the updated function
+            list($alertLevel, $alertClass) = getAlertLevelAndClass($row['heat_index']); 
+        ?>
+        <tr class="<?= $alertClass ?>">
             <td><?= htmlspecialchars($row['location_name']) ?></td>
-            <td><?= htmlspecialchars($row['temperature']) ?></td>
-            <td><?= htmlspecialchars($row['humidity']) ?></td>
-            <td><?= htmlspecialchars($row['heat_index']) ?></td>
-            <td><?= htmlspecialchars($row['alert_level']) ?></td>
+            <td><?= htmlspecialchars(number_format($row['temperature'], 2)) ?></td>
+            <td><?= htmlspecialchars(number_format($row['humidity'], 2)) ?></td>
+            <td><?= htmlspecialchars(number_format($row['heat_index'], 2)) ?></td>
+            <td><?= htmlspecialchars($alertLevel) ?></td> <!-- Displaying alert level text -->
             <td>
-      <?php 
-        $date = new DateTime($row['alert_time']);
-        echo htmlspecialchars($date->format('F j, Y g:i:s A'));
-    ?>
-</td>
- </tr>
+                <?php 
+                    $date = new DateTime($row['alert_time']);
+                    echo htmlspecialchars($date->format('F j, Y g:i:s A'));
+                ?>
+            </td>
+        </tr>
     <?php endwhile; ?>
 <?php else: ?>
     <tr>
-        <td colspan="7">No data available for the selected filters.</td>
+        <td colspan="6">No data available for the selected filters.</td>
     </tr>
 <?php endif; ?>
 </tbody>
+
 
     </table>
     <nav aria-label="Page navigation">

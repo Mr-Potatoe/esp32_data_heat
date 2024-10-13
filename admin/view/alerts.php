@@ -1,4 +1,6 @@
 <?php include '../../fetch_php/admin_protect.php'; ?>
+<?php require '../../vendor/autoload.php';?>
+
 <?php
 require '../../config.php'; // Configuration and database connection
 
@@ -16,7 +18,7 @@ $conn = dbConnect();
 <html lang="en">
 <head>
     <?php include '../components/head.php'; ?>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="../../assets/css/page.css">
     <style>
         /* Custom styles for better UI/UX */
@@ -71,9 +73,9 @@ $conn = dbConnect();
 
     <main id="main" class="main">
     <div class="container">
-    <h1 class="text-center mb-4">Heat Index Alerts</h1>
+        <h1 class="text-center mb-4">Heat Index Alerts</h1>
 
-<!-- Summary Section with responsive cards -->
+        <!-- Summary Section with responsive cards -->
         <div class="row text-center mb-4">
             <div class="col-lg-3 col-md-6 mb-3">
                 <div class="card bg-light p-3 h-100">
@@ -82,26 +84,25 @@ $conn = dbConnect();
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-light p-3 h-100">
-                <h4>Highest Heat Index</h4>
-                <?php if (isset($summaryData['highest_heat_index'])): ?>
-                    <p class="display-4"><?php echo number_format($summaryData['highest_heat_index'], 2); ?> °C</p>
-                <?php else: ?>
-                    <p class="display-4">N/A</p>
-                <?php endif; ?>
+                <div class="card bg-light p-3 h-100">
+                    <h4>Highest Heat Index</h4>
+                    <?php if (isset($summaryData['highest_heat_index'])): ?>
+                        <p class="display-4"><?php echo number_format($summaryData['highest_heat_index'], 2); ?> °C</p>
+                    <?php else: ?>
+                        <p class="display-4">N/A</p>
+                    <?php endif; ?>
+                </div>
             </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-light p-3 h-100">
-                <h4>Location of Highest Heat Index</h4>
-                <?php if (isset($summaryData['location_name'])): ?>
-                    <p class="display-4"><?php echo $summaryData['location_name']; ?></p>
-                <?php else: ?>
-                    <p class="display-4">N/A</p>
-                <?php endif; ?>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card bg-light p-3 h-100">
+                    <h4>Location of Highest Heat Index</h4>
+                    <?php if (isset($summaryData['location_name'])): ?>
+                        <p class="display-4"><?php echo htmlspecialchars($summaryData['location_name']); ?></p>
+                    <?php else: ?>
+                        <p class="display-4">N/A</p>
+                    <?php endif; ?>
+                </div>
             </div>
-        </div>
-
             <div class="col-lg-3 col-md-6 mb-3">
                 <div class="card bg-light p-3 h-100">
                     <h4>Total Locations</h4>
@@ -110,113 +111,112 @@ $conn = dbConnect();
             </div>
         </div>
 
-
-    <!-- Chart Section -->
-    <div class="row">
-        <div class="col-12 mb-4">
-            <h3 class="text-center mb-2">Alerts by Location</h3> <!-- Chart label -->
-            <div class="card p-3">
-                <canvas id="alertChart"></canvas> <!-- Placeholder for the chart -->
+        <!-- Chart Section -->
+        <div class="row">
+            <div class="col-12 mb-4">
+                <h3 class="text-center mb-2">Alerts by Location</h3> <!-- Chart label -->
+                <div class="card p-3">
+                    <canvas id="alertChart"></canvas> <!-- Placeholder for the chart -->
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Alerts Table with hover effect and responsive design -->
-    <h3 class="text-center mb-2">Detailed Alerts</h3> <!-- Table label -->
-    <table>
-        <thead>
-            <tr>
-                <th scope="col">Location</th>
-                <th scope="col">Temperature (°C)</th>
-                <th scope="col">Humidity (%)</th>
-                <th scope="col">Heat Index</th>
-                <th scope="col">Alert Level</th>
-                <th scope="col">Alert Time</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
-            // Function to determine the background color class based on the heat index
-            function getAlertClass($heatIndex) {
-                if ($heatIndex < 27) {
-                    return 'normal'; // Changed from 'Normal' to 'normal'
-                } elseif ($heatIndex >= 27 && $heatIndex < 32) {
-                    return 'caution';
-                } elseif ($heatIndex >= 32 && $heatIndex < 41) {
-                    return 'extreme-caution';
-                } elseif ($heatIndex >= 41 && $heatIndex < 54) {
-                    return 'danger';
-                } else {
-                    return 'extreme-danger';
-                }
-            }
+        <!-- Alerts Table with hover effect and responsive design -->
+        <h3 class="text-center mb-2">Detailed Alerts</h3> <!-- Table label -->
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Location</th>
+                    <th scope="col">Temperature (°C)</th>
+                    <th scope="col">Humidity (%)</th>
+                    <th scope="col">Heat Index (°C)</th>
+                    <th scope="col">Alert Level</th>
+                    <th scope="col">Alert Time</th>
+                </tr>
+            </thead>
+            <tbody>
+    <?php
+    // Function to determine the alert level and background color class based on the heat index
+    function getAlertLevelAndClass($heatIndex) {
+        if ($heatIndex < 27) {
+            return ['Not Hazardous', 'normal']; // Normal (<27°C)
+        } elseif ($heatIndex >= 27 && $heatIndex < 33) {
+            return ['Caution', 'caution']; // Caution (27°C - <33°C)
+        } elseif ($heatIndex >= 33 && $heatIndex < 42) {
+            return ['Extreme Caution', 'extreme-caution']; // Extreme Caution (33°C - <42°C)
+        } elseif ($heatIndex >= 42 && $heatIndex < 52) {
+            return ['Danger', 'danger']; // Danger (42°C - <52°C)
+        } else {
+            return ['Extreme Danger', 'extreme-danger']; // Extreme Danger (>=52°C)
+        }
+    }
 
-            if ($result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    // Determine the alert class based on the heat index
-                    $alertClass = getAlertClass($row['heat_index']);
-                    echo "<tr class='{$alertClass}'>"; // Only include alert class
-                    echo "<td>" . htmlspecialchars($row['location_name']) . "</td>";
-                    echo "<td>" . htmlspecialchars($row['temperature']) . "</td>";
-                    echo "<td>" . htmlspecialchars($row['humidity']) . "</td>";
-                    echo "<td>" . htmlspecialchars($row['heat_index']) . "</td>";
-                    echo "<td>" . htmlspecialchars($alertClass) . "</td>"; // Display the alert class
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            // Determine the alert level and class based on the heat index
+            list($alertLevel, $alertClass) = getAlertLevelAndClass($row['heat_index']);
+            echo "<tr class='{$alertClass}'>"; // Apply the alert class for styling
+            echo "<td>" . htmlspecialchars($row['location_name']) . "</td>";
+            echo "<td>" . htmlspecialchars(number_format($row['temperature'], 2)) . "</td>"; // Format temperature
+            echo "<td>" . htmlspecialchars(number_format($row['humidity'], 2)) . "</td>"; // Format humidity
+            echo "<td>" . htmlspecialchars(number_format($row['heat_index'], 2)) . "</td>"; // Format heat index
+            echo "<td>" . htmlspecialchars($alertLevel) . "</td>"; // Display the alert level text
 
-                    // Format the alert time
-                    $date = new DateTime($row['alert_time']);
-                    echo "<td>" . htmlspecialchars($date->format('F j, Y g:i:s A')) . "</td>"; 
+            // Format the alert time
+            $date = new DateTime($row['alert_time']);
+            echo "<td>" . htmlspecialchars($date->format('F j, Y g:i:s A')) . "</td>";
 
-                    echo "</tr>";
-                }
-            } else {
-                echo "<tr><td colspan='6' class='text-center'>No alerts found</td></tr>";
-            }
-            ?>
-        </tbody>
-    </table>
+            echo "</tr>";
+        }
+    } else {
+        echo "<tr><td colspan='6' class='text-center'>No alerts found</td></tr>";
+    }
+    ?>
+</tbody>
 
-                <!-- Pagination -->
-                <nav aria-label="Page navigation">
-    <ul class="pagination justify-content-center">
-        <!-- Previous button -->
-        <li class="page-item <?php if($page <= 1){ echo 'disabled'; } ?>">
-            <a class="page-link" href="?page=<?php echo $page - 1; ?>" aria-label="Previous">
-                Previous
-            </a>
-        </li>
+        </table>
 
-        <?php
-        // Define the range of pages to display
-        $range = 2;
+        <!-- Pagination -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                <!-- Previous button -->
+                <li class="page-item <?php if($page <= 1){ echo 'disabled'; } ?>">
+                    <a class="page-link" href="?page=<?php echo $page - 1; ?>" aria-label="Previous">
+                        Previous
+                    </a>
+                </li>
 
-        // Calculate start and end page numbers
-        $startPage = max(1, $page - $range);
-        $endPage = min($totalPages, $page + $range);
+                <?php
+                // Define the range of pages to display
+                $range = 2;
 
-        // Loop through the pages within the range
-        for ($i = $startPage; $i <= $endPage; $i++): ?>
-            <li class="page-item <?php if($page == $i){ echo 'active'; } ?>">
-                <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-            </li>
-        <?php endfor; ?>
+                // Calculate start and end page numbers
+                $startPage = max(1, $page - $range);
+                $endPage = min($totalPages, $page + $range);
 
-        <!-- Next button -->
-        <li class="page-item <?php if($page >= $totalPages){ echo 'disabled'; } ?>">
-            <a class="page-link" href="?page=<?php echo $page + 1; ?>" aria-label="Next">
-                Next
-            </a>
-        </li>
-    </ul>
-</nav>
+                // Loop through the pages within the range
+                for ($i = $startPage; $i <= $endPage; $i++): ?>
+                    <li class="page-item <?php if($page == $i){ echo 'active'; } ?>">
+                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                    </li>
+                <?php endfor; ?>
 
-<!-- Total pages label -->
-<div class="total-pages-label text-center mt-2">
-    <strong>Page <?php echo $page; ?> of <?php echo $totalPages; ?></strong>
-</div>
+                <!-- Next button -->
+                <li class="page-item <?php if($page >= $totalPages){ echo 'disabled'; } ?>">
+                    <a class="page-link" href="?page=<?php echo $page + 1; ?>" aria-label="Next">
+                        Next
+                    </a>
+                </li>
+            </ul>
+        </nav>
 
-
+        <!-- Total pages label -->
+        <div class="total-pages-label text-center mt-2">
+            <strong>Page <?php echo $page; ?> of <?php echo $totalPages; ?></strong>
         </div>
-    </main>
+    </div>
+</main>
+
 
     <!-- Footer and scripts -->
     <?php include '../components/footer.php'; ?>
@@ -265,4 +265,4 @@ $conn = dbConnect();
         });
     </script>
 </body>
-</html>s
+</html>

@@ -38,22 +38,33 @@
             <h1 class="mb-4 text-center">Sensor Status Dashboard</h1>
 
                 <!-- Legend -->
-        <div class="legend">
-            <div><div class="legend-color normal"></div>Normal (&lt;27°C)</div>
-            <div><div class="legend-color caution"></div>Caution (27°C - 32°C)</div>
-            <div><div class="legend-color extreme-caution"></div>Extreme Caution (32°C - 41°C)</div>
-            <div><div class="legend-color danger"></div>Danger (41°C - 54°C)</div>
-            <div><div class="legend-color extreme-danger"></div>Extreme Danger (&gt;54°C)</div>
-        </div>
+                <div class="legend">
+    <div>
+        <div class="legend-color normal"></div> Not Hazardous (&lt; 27°C)
+    </div>
+    <div>
+        <div class="legend-color caution"></div> Caution (27°C - 32°C)
+    </div>
+    <div>
+        <div class="legend-color extreme-caution"></div> Extreme Caution (33°C - 41°C)
+    </div>
+    <div>
+        <div class="legend-color danger"></div> Danger (42°C - 51°C)
+    </div>
+    <div>
+        <div class="legend-color extreme-danger"></div> Extreme Danger (&ge; 52°C)
+    </div>
+</div>
+
 
             <table id="sensorTable">
                 <thead>
                     <tr>
                         <th>Sensor ID</th>
                         <th>Location Name</th>
-                        <th>Temperature</th>
-                        <th>Humidity</th>
-                        <th>Heat Index</th>
+                        <th>Temperature (°C)</th>
+                        <th>Humidity (%)</th>
+                        <th>Heat Index (°C)</th>
                         <th>Alert Level</th>
                         <th>Status</th>
                         <th>Last Update</th>
@@ -101,7 +112,7 @@ function fetchSensorData(page = 1) {
                         alertClass = 'caution';
                     } else if (sensor.heat_index >= 32 && sensor.heat_index < 41) {
                         alertClass = 'extreme-caution';
-                    } else if (sensor.heat_index >= 41 && sensor.heat_index < 54) {
+                    } else if (sensor.heat_index >= 42 && sensor.heat_index < 51) {
                         alertClass = 'danger';
                     } else {
                         alertClass = 'extreme-danger';
@@ -110,8 +121,8 @@ function fetchSensorData(page = 1) {
                     row.innerHTML = `
                         <td>${sensor.sensor_id}</td>
                         <td>${sensor.location_name}</td>
-                        <td>${sensor.temperature} °C</td>
-                        <td>${sensor.humidity} %</td>
+                        <td>${sensor.temperature}</td>
+                        <td>${sensor.humidity}</td>
                         <td class="${alertClass}">${sensor.heat_index}</td>
                         <td>${sensor.alert}</td>
                         <td class="${statusClass}">${sensor.status}</td>

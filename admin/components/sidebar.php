@@ -6,15 +6,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <ul class="sidebar-nav" id="sidebar-nav">
 
         <?php 
-        $menu_items = [
-            ['link' => 'dashboard.php', 'icon' => 'bi-house', 'label' => 'Dashboard'],
-            ['link' => 'map.php', 'icon' => 'bi-map', 'label' => 'Heat Index Map'],
-            ['link' => 'sensor_status.php', 'icon' => 'bi-tools', 'label' => 'View Sensor Status'],
-            ['link' => 'view_sensors.php', 'icon' => 'bi-tools', 'label' => 'View Sensors Data'],
-            ['link' => 'history.php', 'icon' => 'bi-clock-history', 'label' => 'Heat Index History'],
-            ['link' => 'alerts.php', 'icon' => 'bi-exclamation-triangle', 'label' => 'Alerts'],
-           
-        ];
+            $menu_items = [
+                ['link' => 'dashboard.php', 'icon' => 'bi-house', 'label' => 'Dashboard'],
+                ['link' => 'map.php', 'icon' => 'bi-map', 'label' => 'Heat Index Map'],
+                ['link' => 'sensor_status.php', 'icon' => 'bi-tools', 'label' => 'View Sensor Status'],
+                ['link' => 'view_sensors.php', 'icon' => 'bi-table', 'label' => 'View Sensors Data'],
+                ['link' => 'history.php', 'icon' => 'bi-clock', 'label' => 'Heat Index History'],
+                ['link' => 'alerts.php', 'icon' => 'bi-bell', 'label' => 'Alerts'],
+            ];
+    
 
         foreach ($menu_items as $item):
             // Check if the current page matches the link

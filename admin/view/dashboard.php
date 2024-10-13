@@ -14,6 +14,9 @@ $conn = dbConnect(); // Connect to the database
     <?php include '../components/head.php'; ?>
     <title>Sensor Readings Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
+    <!-- Include jQuery from a CDN -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 
     <style>
         .container {
@@ -23,6 +26,40 @@ $conn = dbConnect(); // Connect to the database
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+    .dropdown-icon-wrapper {
+        position: relative;
+    }
+
+    .dropdown-icon {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+
+    .card {
+    background-color: #f8f9fa; /* Light background for the card */
+    border: 1px solid #e1e1e1; /* Soft border */
+    border-radius: 5px; /* Rounded corners */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.card-title {
+    font-weight: bold; /* Bold title for emphasis */
+    margin-bottom: 1rem; /* Space below the title */
+}
+
+.form-inline {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping for small screens */
+}
+
+.form-group {
+    flex: 1; /* Each form group takes equal space */
+    min-width: 250px; /* Ensure inputs have a minimum width */
 }
 .card-hover:hover {
         transform: scale(1.02);
@@ -44,44 +81,45 @@ $conn = dbConnect(); // Connect to the database
     <div class="container">
         <h1 class="mt-4">Sensor Readings Dashboard</h1>
 
-<!-- Filter Form -->
-<form method="GET" action="" class="mb-4">
-    <div class="row mb-3">
-        <div class="col">
-            <!-- Time Interval Dropdown -->
-            <label for="interval" class="form-label">Interval:</label>
-            <select id="interval" name="interval" class="form-select">
-                <option value="hour" <?php echo $interval === 'hour' ? 'selected' : ''; ?>>Hourly</option>
-                <option value="day" <?php echo $interval === 'day' ? 'selected' : ''; ?>>Daily</option>
-                <option value="week" <?php echo $interval === 'week' ? 'selected' : ''; ?>>Weekly</option>
-                <option value="month" <?php echo $interval === 'month' ? 'selected' : ''; ?>>Monthly</option>
-                <option value="year" <?php echo $interval === 'year' ? 'selected' : ''; ?>>Yearly</option>
-            </select>
-        </div>
-    </div>
+        <div class="card p-3 mb-4 filter-form">
+    <h5 class="card-title">Filter Data</h5>
+    <form method="GET">
+        <div class="form-row d-flex flex-wrap">
+            <!-- Time Filter Dropdown with Icon -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="interval" class="mr-2">Select Time Interval:</label>
+                <div class="dropdown-icon-wrapper">
+                    <select id="interval" name="interval" class="form-control">
+                        <option value="hour" <?= $interval === 'hour' ? 'selected' : ''; ?>>Hourly</option>
+                        <option value="day" <?= $interval === 'day' ? 'selected' : ''; ?>>Daily</option>
+                        <option value="week" <?= $interval === 'week' ? 'selected' : ''; ?>>Weekly</option>
+                        <option value="month" <?= $interval === 'month' ? 'selected' : ''; ?>>Monthly</option>
+                        <option value="year" <?= $interval === 'year' ? 'selected' : ''; ?>>Yearly</option>
+                    </select>
+                    <i class="fas fa-chevron-down dropdown-icon"></i> <!-- Font Awesome icon -->
+                </div>
+            </div>
 
-    <div class="row mb-3">
-        <div class="col">
-            <!-- Start Date Picker -->
-            <label for="start_date" class="form-label">Start:</label>
-            <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?php echo isset($_GET['start_date']) ? $_GET['start_date'] : ''; ?>">
-        </div>
-        <div class="col">
-            <!-- End Date Picker -->
-            <label for="end_date" class="form-label">End:</label>
-            <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?php echo isset($_GET['end_date']) ? $_GET['end_date'] : ''; ?>">
-        </div>
-    </div>
+            <!-- Start Date Input -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="start_date" class="mr-2">Start Date and Time:</label>
+                <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?= htmlspecialchars(isset($_GET['start_date']) ? $_GET['start_date'] : ''); ?>" required>
+            </div>
 
-    <div class="d-flex justify-content-between mt-3">
+            <!-- End Date Input -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="end_date" class="mr-2">End Date and Time:</label>
+                <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?= htmlspecialchars(isset($_GET['end_date']) ? $_GET['end_date'] : ''); ?>" required>
+            </div>
+        </div>
+
         <!-- Filter Button -->
-        <button type="submit" class="btn btn-primary">Filter</button>
-        <!-- Download PDF Button -->
-        <a href="../../generate_pdf/generate_report.php?interval=<?php echo $interval; ?>&start_date=<?php echo $startDate; ?>&end_date=<?php echo $endDate; ?>" class="btn btn-secondary" target="_blank">Download PDF</a>
-    </div>
-</form>
-
-
+        <div class="d-flex justify-content-start mt-3">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="../../generate_pdf/generate_report.php?interval=<?= $interval; ?>&start_date=<?= htmlspecialchars($startDate); ?>&end_date=<?= htmlspecialchars($endDate); ?>" class="btn btn-secondary ms-2" target="_blank">Download PDF</a>
+        </div>
+    </form>
+</div>
 
 
         <!-- Check if there are no locations and display the message -->
@@ -272,37 +310,7 @@ $conn = dbConnect(); // Connect to the database
 
 
         <!-- Pagination Links -->
-<div class="d-flex justify-content-between align-items-center mt-4">
-    <div>
-        <!-- Previous Page Link -->
-        <?php if ($page > 1): ?>
-            <a href="?page=<?= $page - 1 ?>&interval=<?= $interval ?>" class="btn btn-outline-primary">
-                <i class="bi bi-chevron-left"></i> Previous
-            </a>
-        <?php else: ?>
-            <button class="btn btn-outline-secondary" disabled>
-                <i class="bi bi-chevron-left"></i> Previous
-            </button>
-        <?php endif; ?>
-    </div>
 
-    <div>
-        Page <?= $page ?> of <?= $totalPages ?>
-    </div>
-
-    <div>
-        <!-- Next Page Link -->
-        <?php if ($page < $totalPages): ?>
-            <a href="?page=<?= $page + 1 ?>&interval=<?= $interval ?>" class="btn btn-outline-primary">
-                Next <i class="bi bi-chevron-right"></i>
-            </a>
-        <?php else: ?>
-            <button class="btn btn-outline-secondary" disabled>
-                Next <i class="bi bi-chevron-right"></i>
-            </button>
-        <?php endif; ?>
-    </div>
-</div>
 
 
     </div>
@@ -317,22 +325,6 @@ $conn = dbConnect(); // Connect to the database
 
     <!-- ======= Footer ======= -->
     <?php include '../components/footer.php'; ?>
-
-    <script>
-    function filterData() {
-        const interval = document.getElementById('interval').value;
-        const startDate = document.getElementById('start_date').value;
-        const endDate = document.getElementById('end_date').value;
-
-        // Ensure both start and end dates are provided
-        if (startDate && endDate) {
-            window.location.href = `?interval=${interval}&start_date=${startDate}&end_date=${endDate}`;
-        } else {
-            alert('Please provide both start and end dates.');
-        }
-    }
-</script>
-
 
     <?php include '../components/scripts.php'; ?>
 

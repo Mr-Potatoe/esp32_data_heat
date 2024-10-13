@@ -38,16 +38,17 @@ while (true) {
 
     // Determine alert level based on the heat index
     if ($heat_index < 27) {
-        $alert = 'Normal'; // Normal (< 27°C)
-    } elseif ($heat_index >= 27 && $heat_index < 32) {
+        $alert = 'Not Hazardous'; // Normal (< 27°C)
+    } elseif ($heat_index >= 27 && $heat_index < 33) {
         $alert = 'Caution'; // Caution (27°C - 32°C)
-    } elseif ($heat_index >= 32 && $heat_index < 41) {
-        $alert = 'Extreme Caution'; // Extreme Caution (32°C - 41°C)
-    } elseif ($heat_index >= 41 && $heat_index < 54) {
-        $alert = 'Danger'; // Danger (41°C - 54°C)
+    } elseif ($heat_index >= 33 && $heat_index < 42) {
+        $alert = 'Extreme Caution'; // Extreme Caution (33°C - 41°C)
+    } elseif ($heat_index >= 42 && $heat_index < 52) {
+        $alert = 'Danger'; // Danger (42°C - 51°C)
     } else {
-        $alert = 'Extreme Danger'; // Extreme Danger (> 54°C)
+        $alert = 'Extreme Danger'; // Extreme Danger (>= 52°C)
     }
+    
 
     // Get the current time for alert_time
     $alert_time = date('Y-m-d H:i:s'); // Format: Y-m-d H:i:s

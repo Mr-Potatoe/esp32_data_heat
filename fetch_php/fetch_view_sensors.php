@@ -28,20 +28,21 @@ $locations = $conn->query("SELECT DISTINCT location_name FROM sensor_readings")-
 $selectedLocation = isset($_GET['location_name']) ? $_GET['location_name'] : '';
 
 // Default start date to 1 day ago and end date to the current Philippine time
-$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d\TH:i', strtotime('-1 day'));
-$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d\TH:i');
+$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d\TH:i:s', strtotime('-1 day')); // Added seconds
+$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d\TH:i:s'); // Added seconds
 
 
 // Prepare the SQL query to fetch data based on the selected location and date range with pagination
 $sql = "SELECT *, 
                CASE 
                    WHEN heat_index < 27 THEN 'Normal' 
-                   WHEN heat_index >= 27 AND heat_index < 32 THEN 'Caution' 
-                   WHEN heat_index >= 32 AND heat_index < 41 THEN 'Extreme Caution' 
-                   WHEN heat_index >= 41 AND heat_index < 54 THEN 'Danger' 
+                   WHEN heat_index >= 27 AND heat_index < 33 THEN 'Caution' 
+                   WHEN heat_index >= 33 AND heat_index < 42 THEN 'Extreme Caution' 
+                   WHEN heat_index >= 42 AND heat_index < 52 THEN 'Danger' 
                    ELSE 'Extreme Danger' 
                END AS alert_level 
-         FROM sensor_readings WHERE 1=1";
+         FROM sensor_readings 
+         WHERE 1=1";
 
 $params = [];
 if ($selectedLocation) {
@@ -81,18 +82,20 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 // Function to determine the background color class based on the heat index
-function getAlertClass($heatIndex) {
+function getAlertLevelAndClass($heatIndex) {
     if ($heatIndex < 27) {
-        return 'normal'; // Normal (<27°C)
-    } elseif ($heatIndex >= 27 && $heatIndex < 32) {
-        return 'caution'; // Caution (27°C - 32°C)
-    } elseif ($heatIndex >= 32 && $heatIndex < 41) {
-        return 'extreme-caution'; // Extreme Caution (32°C - 41°C)
-    } elseif ($heatIndex >= 41 && $heatIndex < 54) {
-        return 'danger'; // Danger (41°C - 54°C)
+        return ['Not Hazardous', 'normal']; // Normal (<27°C)
+    } elseif ($heatIndex >= 27 && $heatIndex < 33) { // Caution is < 33
+        return ['Caution', 'caution']; // Caution (27°C - <33°C)
+    } elseif ($heatIndex >= 33 && $heatIndex < 42) { // Extreme Caution is < 42
+        return ['Extreme Caution', 'extreme-caution']; // Extreme Caution (33°C - <42°C)
+    } elseif ($heatIndex >= 42 && $heatIndex < 52) { // Danger is < 52
+        return ['Danger', 'danger']; // Danger (42°C - <52°C)
     } else {
-        return 'extreme-danger'; // Extreme Danger (>54°C)
+        return ['Extreme Danger', 'extreme-danger']; // Extreme Danger (>=52°C)
     }
 }
+
+
 
 ?>

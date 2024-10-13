@@ -113,8 +113,8 @@ float calculateHeatIndex(float temperature, float humidity) {
 // Function to determine alert level based on heat index
 String determineAlertLevel(float heatIndex) {
   if (heatIndex < 27) {
-    return "Normal";
-  } else if (heatIndex >= 27 && heatIndex <= 32) {
+    return "Not Hazardous";
+  } else if (heatIndex >= 27 && heatIndex < 33) { // Upper bound is exclusive
     return "Caution";
   } else if (heatIndex >= 33 && heatIndex <= 41) {
     return "Extreme Caution";
@@ -124,6 +124,7 @@ String determineAlertLevel(float heatIndex) {
     return "Extreme Danger";
   }
 }
+
 
 // Function to activate the buzzer
 void activateBuzzer() {

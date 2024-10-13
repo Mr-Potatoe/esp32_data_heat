@@ -4,7 +4,7 @@
 date_default_timezone_set('Asia/Manila');
 
 // Pagination variables
-$locationsPerPage = 2; // Number of location tables per page
+$locationsPerPage = 100; // Number of location tables per page
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1; // Current page number
 $offset = ($page - 1) * $locationsPerPage; // Calculate offset
 
@@ -25,8 +25,8 @@ $locationsResult = $conn->query($locationsQuery);
 $filterType = isset($_GET['filter']) ? $_GET['filter'] : 'hourly';
 
 // Get the start and end date from the form, default to past week
-$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d H:i:s', strtotime('-1 year'));
-$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d H:i:s');
+$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d H:i', strtotime('-1 year'));
+$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d H:i');
 
 // Prepare the SQL query to use alert_time instead of timestamp with date range
 $sql = "
@@ -54,19 +54,22 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 // Function to determine the background color class based on the heat index
-function getAlertClass($heatIndex) {
+function getAlertLevelAndClass($heatIndex) {
     if ($heatIndex < 27) {
-        return 'normal';
-    } elseif ($heatIndex >= 27 && $heatIndex < 32) {
-        return 'caution';
-    } elseif ($heatIndex >= 32 && $heatIndex < 41) {
-        return 'extreme-caution';
-    } elseif ($heatIndex >= 41 && $heatIndex < 54) {
-        return 'danger';
+        return ['Not Hazardous', 'normal']; // Normal (<27°C)
+    } elseif ($heatIndex >= 27 && $heatIndex < 33) { // Caution is < 33
+        return ['Caution', 'caution']; // Caution (27°C - <33°C)
+    } elseif ($heatIndex >= 33 && $heatIndex < 42) { // Extreme Caution is < 42
+        return ['Extreme Caution', 'extreme-caution']; // Extreme Caution (33°C - <42°C)
+    } elseif ($heatIndex >= 42 && $heatIndex < 52) { // Danger is < 52
+        return ['Danger', 'danger']; // Danger (42°C - <52°C)
     } else {
-        return 'extreme-danger';
+        return ['Extreme Danger', 'extreme-danger']; // Extreme Danger (>=52°C)
     }
 }
+
+
+
 
 // Helper function to format the period column in a more human-readable way
 function formatPeriod($period, $filterType) {

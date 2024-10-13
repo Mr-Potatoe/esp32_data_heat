@@ -134,13 +134,24 @@ $conn = dbConnect();
 
 
             <!-- Legend -->
-        <div class="legend">
-            <div><div class="legend-color normal"></div>Normal (&lt;27°C)</div>
-            <div><div class="legend-color caution"></div>Caution (27°C - 32°C)</div>
-            <div><div class="legend-color extreme-caution"></div>Extreme Caution (32°C - 41°C)</div>
-            <div><div class="legend-color danger"></div>Danger (41°C - 54°C)</div>
-            <div><div class="legend-color extreme-danger"></div>Extreme Danger (&gt;54°C)</div>
-        </div>
+<div class="legend">
+    <div>
+        <div class="legend-color normal"></div> Not Hazardous (&lt; 27°C)
+    </div>
+    <div>
+        <div class="legend-color caution"></div> Caution (27°C - 32°C)
+    </div>
+    <div>
+        <div class="legend-color extreme-caution"></div> Extreme Caution (33°C - 41°C)
+    </div>
+    <div>
+        <div class="legend-color danger"></div> Danger (42°C - 51°C)
+    </div>
+    <div>
+        <div class="legend-color extreme-danger"></div> Extreme Danger (&ge; 52°C)
+    </div>
+</div>
+
 
 <?php if ($locationsResult && $locationsResult->num_rows > 0): ?>
     <?php while ($locationRow = $locationsResult->fetch_assoc()): ?>
@@ -162,33 +173,36 @@ $conn = dbConnect();
                 </tr>
             </thead>
             <tbody>
-                <?php
-                // Reset result pointer
-                $locationName = $locationRow['location_name'];
-                $stmt->execute(); // Execute the prepared statement again for new results
-                $result = $stmt->get_result();
+            <tbody>
+    <?php
+    // Reset result pointer
+    $locationName = $locationRow['location_name'];
+    $stmt->execute(); // Execute the prepared statement again for new results
+    $result = $stmt->get_result();
 
-                $dataAvailable = false; // Track if data is available for the current location
-                while ($row = $result->fetch_assoc()) {
-                    if ($row['location_name'] == $locationName) {
-                        $alertClass = getAlertClass($row['avg_heat_index']);
-                        $dataAvailable = true; // Data exists for this location
-                        ?>
-                        <tr class="<?= $alertClass ?>">
-                            <td><?= formatPeriod($row['period'], $filterType) ?></td>
-                            <td><?= number_format($row['avg_temp'], 2) ?></td>
-                            <td><?= number_format($row['avg_humidity'], 2) ?></td>
-                            <td><?= number_format($row['avg_heat_index'], 2) ?></td>
-                            <td><?= ucfirst(str_replace('-', ' ', $alertClass)) ?></td>
-                        </tr>
-                        <?php
-                    }
-                }
-                if (!$dataAvailable) {
-                    echo '<tr><td colspan="5">No readings available for this location.</td></tr>';
-                }
-                ?>
-            </tbody>
+    $dataAvailable = false; // Track if data is available for the current location
+    while ($row = $result->fetch_assoc()) {
+        if ($row['location_name'] == $locationName) {
+            // Use the updated function to get both alert level and class
+            list($alertLevel, $alertClass) = getAlertLevelAndClass($row['avg_heat_index']);
+            $dataAvailable = true; // Data exists for this location
+            ?>
+            <tr class="<?= $alertClass ?>">
+                <td><?= formatPeriod($row['period'], $filterType) ?></td>
+                <td><?= number_format($row['avg_temp'], 2) ?></td>
+                <td><?= number_format($row['avg_humidity'], 2) ?></td>
+                <td><?= number_format($row['avg_heat_index'], 2) ?></td>
+                <td><?= $alertLevel ?></td> <!-- Displaying alert level text -->
+            </tr>
+            <?php
+        }
+    }
+    if (!$dataAvailable) {
+        echo '<tr><td colspan="5">No readings available for this location.</td></tr>';
+    }
+    ?>
+</tbody>
+
         </table>
     <?php endwhile; ?>
 <?php else: ?>
@@ -197,38 +211,7 @@ $conn = dbConnect();
 
 
             <!-- Pagination Controls -->
-            <div class="d-flex justify-content-between align-items-center mt-4">
-               
-                <div>
-                    <!-- Previous Page Link -->
-                    <?php if ($page > 1): ?>
-                        <a href="?page=<?= $page - 1 ?>&filter=<?= $filterType ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>" class="btn btn-outline-primary">
-                            <i class="bi bi-chevron-left"></i> Previous
-                        </a>
-                    <?php else: ?>
-                        <button class="btn btn-outline-secondary" disabled>
-                            <i class="bi bi-chevron-left"></i> Previous
-                        </button>
-                    <?php endif; ?>
 
-                </div>
-
-                    <div>
-                    <span>Page <?= $page ?> of <?= $totalPages ?></span>
-                </div>
-                <div>
-                    <!-- Next Page Link -->
-                    <?php if ($page < $totalPages): ?>
-                        <a href="?page=<?= $page + 1 ?>&filter=<?= $filterType ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>" class="btn btn-outline-primary">
-                            Next <i class="bi bi-chevron-right"></i>
-                        </a>
-                    <?php else: ?>
-                        <button class="btn btn-outline-secondary" disabled>
-                            Next <i class="bi bi-chevron-right"></i>
-                        </button>
-                    <?php endif; ?>
-                </div>
-            </div>
         </div>
     </main>
 
