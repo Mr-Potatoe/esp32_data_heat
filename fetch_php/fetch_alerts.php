@@ -50,4 +50,59 @@ $totalResult = $conn->query($totalQuery);
 $totalData = $totalResult->fetch_assoc();
 $totalRows = $totalData['total'];
 $totalPages = ceil($totalRows / $limit);
+
+// Initialize filter variables
+$location = isset($_GET['location']) ? $_GET['location'] : '';
+$alert_level = isset($_GET['alert_level']) ? $_GET['alert_level'] : '';
+$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : '';
+$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : '';
+
+// Base query
+$query = "SELECT location_name, latitude, longitude, temperature, humidity, heat_index, alert, alert_time 
+          FROM sensor_readings 
+          WHERE alert IS NOT NULL AND alert_time >= NOW() - INTERVAL 1 DAY";
+
+// Apply location filter if selected
+if (!empty($location)) {
+    $query .= " AND location_name = '$location'";
+}
+
+// Apply alert level filter if selected
+if (!empty($alert_level)) {
+    $query .= " AND heat_index BETWEEN ";
+    switch ($alert_level) {
+        case 'Not Hazardous':
+            $query .= "0 AND 26.99";
+            break;
+        case 'Caution':
+            $query .= "27 AND 32.99";
+            break;
+        case 'Extreme Caution':
+            $query .= "33 AND 41.99";
+            break;
+        case 'Danger':
+            $query .= "42 AND 51.99";
+            break;
+        case 'Extreme Danger':
+            $query .= "52 AND 100";
+            break;
+    }
+}
+
+// Apply start date filter if selected
+if (!empty($start_date)) {
+    $query .= " AND alert_time >= '$start_date 00:00:00'";
+}
+
+// Apply end date filter if selected
+if (!empty($end_date)) {
+    $query .= " AND alert_time <= '$end_date 23:59:59'";
+}
+
+// Add sorting and pagination
+$query .= " ORDER BY alert_time DESC LIMIT $limit OFFSET $offset";
+
+// Execute query
+$result = $conn->query($query);
+
 ?>

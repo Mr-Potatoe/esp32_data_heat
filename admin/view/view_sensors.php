@@ -160,7 +160,8 @@ $conn = dbConnect();
 
         <!-- Filter Button -->
         <div class="d-flex justify-content-start">
-            <button type="submit" class="btn btn-primary">Filter</button>
+            <button type="submit" class="btn btn-primary me-2">Filter</button>
+            <a href="view_sensors.php" class="btn btn-secondary">Clear Filters</a>
         </div>
     </form>
 </div>

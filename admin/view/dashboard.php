@@ -116,8 +116,8 @@ $conn = dbConnect(); // Connect to the database
         <!-- Filter Button -->
         <div class="d-flex justify-content-start mt-3">
             <button type="submit" class="btn btn-primary">Filter</button>
-            <a href="../../generate_pdf/generate_report.php?interval=<?= $interval; ?>&start_date=<?= htmlspecialchars($startDate); ?>&end_date=<?= htmlspecialchars($endDate); ?>" class="btn btn-secondary ms-2" target="_blank">Download PDF</a>
-        </div>
+            <a href="dashboard.php" class="btn btn-secondary ms-2">Clear Filters</a>
+          </div>
     </form>
 </div>
 

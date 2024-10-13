@@ -127,7 +127,8 @@ $conn = dbConnect();
 
         <!-- Filter Button (aligned at the bottom left) -->
         <div class="form-group  d-flex justify-content-start">
-            <button type="submit" class="btn btn-primary">Filter</button>
+            <button type="submit" class="btn btn-primary me-2">Filter</button>
+            <a href="history.php" class="btn btn-secondary">Clear Filters</a>
         </div>
     </form>
 </div>

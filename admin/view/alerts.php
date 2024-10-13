@@ -20,7 +20,10 @@ $conn = dbConnect();
     <?php include '../components/head.php'; ?>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="../../assets/css/page.css">
-    <style>
+<style>
+
+        
+        
         /* Custom styles for better UI/UX */
         .card {
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -123,8 +126,67 @@ $conn = dbConnect();
 
         <!-- Alerts Table with hover effect and responsive design -->
         <h3 class="text-center mb-2">Detailed Alerts</h3> <!-- Table label -->
+
+
+<div class="card p-3 mb-4 filter-form">
+    <h5 class="card-title">Filter Alerts</h5>
+    <form method="GET" action="" class="mb-3">
+        <div class="form-row d-flex flex-wrap">
+
+            <!-- Location Filter -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="location" class="form-label">Location</label>
+                <select class="form-select" name="location" id="location">
+                    <option value="">All Locations</option>
+                    <?php
+                    // Fetch distinct locations from the database
+                    $locationQuery = "SELECT DISTINCT location_name FROM sensor_readings WHERE alert IS NOT NULL";
+                    $locationResult = $conn->query($locationQuery);
+                    while ($locRow = $locationResult->fetch_assoc()) {
+                        $selected = isset($_GET['location']) && $_GET['location'] === $locRow['location_name'] ? 'selected' : '';
+                        echo "<option value='{$locRow['location_name']}' $selected>{$locRow['location_name']}</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+
+            <!-- Alert Level Filter -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="alert_level" class="form-label">Alert Level</label>
+                <select class="form-select" name="alert_level" id="alert_level">
+                    <option value="">All Alert Levels</option>
+                    <option value="Not Hazardous" <?php if (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Not Hazardous') echo 'selected'; ?>>Not Hazardous</option>
+                    <option value="Caution" <?php if (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Caution') echo 'selected'; ?>>Caution</option>
+                    <option value="Extreme Caution" <?php if (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Extreme Caution') echo 'selected'; ?>>Extreme Caution</option>
+                    <option value="Danger" <?php if (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Danger') echo 'selected'; ?>>Danger</option>
+                    <option value="Extreme Danger" <?php if (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Extreme Danger') echo 'selected'; ?>>Extreme Danger</option>
+                </select>
+            </div>
+
+            <!-- Start Date Filter -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="start_date" class="form-label">Start Date</label>
+                <input type="date" class="form-control" name="start_date" id="start_date" value="<?php echo isset($_GET['start_date']) ? $_GET['start_date'] : ''; ?>">
+            </div>
+
+            <!-- End Date Filter -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="end_date" class="form-label">End Date</label>
+                <input type="date" class="form-control" name="end_date" id="end_date" value="<?php echo isset($_GET['end_date']) ? $_GET['end_date'] : ''; ?>">
+            </div>
+
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="d-flex justify-content-start">
+            <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
+            <a href="alerts.php" class="btn btn-secondary">Clear Filters</a>
+        </div>
+    </form>
+</div>
+
                     <!-- Legend -->
-<div class="legend">
+                    <div class="legend">
     <div>
         <div class="legend-color normal"></div> Not Hazardous (&lt; 27°C)
     </div>
@@ -141,6 +203,8 @@ $conn = dbConnect();
         <div class="legend-color extreme-danger"></div> Extreme Danger (&ge; 52°C)
     </div>
 </div>
+
+
         <table>
             <thead>
                 <tr>
@@ -195,18 +259,18 @@ $conn = dbConnect();
         </table>
 
     <!-- Pagination -->
-<nav aria-label="Page navigation">
+    <nav aria-label="Page navigation">
     <ul class="pagination justify-content-center">
         <!-- First button -->
         <li class="page-item <?php if ($page <= 1) { echo 'disabled'; } ?>">
-            <a class="page-link" href="?page=1" aria-label="First">
+            <a class="page-link" href="?page=1&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" aria-label="First">
                 First
             </a>
         </li>
 
         <!-- Previous button -->
         <li class="page-item <?php if ($page <= 1) { echo 'disabled'; } ?>">
-            <a class="page-link" href="?page=<?php echo $page - 1; ?>" aria-label="Previous">
+            <a class="page-link" href="?page=<?php echo $page - 1; ?>&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" aria-label="Previous">
                 Previous
             </a>
         </li>
@@ -222,25 +286,26 @@ $conn = dbConnect();
         // Loop through the pages within the range
         for ($i = $startPage; $i <= $endPage; $i++): ?>
             <li class="page-item <?php if ($page == $i) { echo 'active'; } ?>">
-                <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                <a class="page-link" href="?page=<?php echo $i; ?>&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>"><?php echo $i; ?></a>
             </li>
         <?php endfor; ?>
 
         <!-- Next button -->
         <li class="page-item <?php if ($page >= $totalPages) { echo 'disabled'; } ?>">
-            <a class="page-link" href="?page=<?php echo $page + 1; ?>" aria-label="Next">
+            <a class="page-link" href="?page=<?php echo $page + 1; ?>&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" aria-label="Next">
                 Next
             </a>
         </li>
 
         <!-- Last button -->
         <li class="page-item <?php if ($page >= $totalPages) { echo 'disabled'; } ?>">
-            <a class="page-link" href="?page=<?php echo $totalPages; ?>" aria-label="Last">
+            <a class="page-link" href="?page=<?php echo $totalPages; ?>&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" aria-label="Last">
                 Last
             </a>
         </li>
     </ul>
 </nav>
+
 
 
         <!-- Total pages label -->

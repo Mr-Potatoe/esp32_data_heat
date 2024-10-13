@@ -29,3 +29,6 @@
         <?php endif; ?>
     </div>
 </div>
+
+<a href="../../generate_pdf/generate_report.php?interval=<?= $interval; ?>&start_date=<?= htmlspecialchars($startDate); ?>&end_date=<?= htmlspecialchars($endDate); ?>" class="btn btn-secondary ms-2" target="_blank">Download PDF</a>
+       
