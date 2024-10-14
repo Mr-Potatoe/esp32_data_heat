@@ -12,6 +12,7 @@ $conn = dbConnect();
 
 <?php include '../../fetch_php/fetch_history.php'; ?>
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -86,120 +87,112 @@ $conn = dbConnect();
 
     <main id="main" class="main">
         <div class="container">
-        <h1><i class="bi bi-table"></i> Heatmap Table Data by Location</h1>
+            <h1><i class="bi bi-table"></i> Heatmap Table Data by Location</h1>
 
-
-    
-
-<div class="card p-3 mb-4 filter-form">
-    <h5 class="card-title">Filter Data</h5>
-    <form method="GET">
-        <div class="form-row d-flex flex-wrap">
-<!-- Time Filter Dropdown with Icon -->
+            <div class="card p-3 mb-4 filter-form">
+                <h5 class="card-title">Filter Data</h5>
+                <form method="GET">
+                    <div class="form-row d-flex flex-wrap">
+                        <!-- Location Filter Dropdown -->
 <div class="form-group col-md-4 col-sm-12">
-    <label for="filter" class="mr-2">Select Time Filter:</label>
-    <div class="dropdown-icon-wrapper">
-        <select id="filter" name="filter" class="form-control">
-            <option value="hourly" <?= $filterType == 'hourly' ? 'selected' : '' ?>>Hourly</option>
-            <option value="daily" <?= $filterType == 'daily' ? 'selected' : '' ?>>Daily</option>
-            <option value="weekly" <?= $filterType == 'weekly' ? 'selected' : '' ?>>Weekly</option>
-            <option value="monthly" <?= $filterType == 'monthly' ? 'selected' : '' ?>>Monthly</option>
-            <option value="yearly" <?= $filterType == 'yearly' ? 'selected' : '' ?>>Yearly</option>
-        </select>
-        <i class="fas fa-chevron-down dropdown-icon"></i> <!-- Font Awesome icon -->
-    </div>
+    <label for="locations">Select Location:</label>
+    <select id="locations" name="location" class="form-control">
+        <option value="">All Locations</option> <!-- Option to show all locations -->
+        <?php foreach ($allLocations as $location): ?>
+            <option value="<?= htmlspecialchars($location) ?>" <?= $selectedLocation == $location ? 'selected' : '' ?>>
+                <?= htmlspecialchars($location) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
 </div>
 
 
+                        <div class="form-group col-md-4 col-sm-12">
+                            <label for="filter" class="mr-2">Select Time Filter:</label>
+                            <div class="dropdown-icon-wrapper">
+                                <select id="filter" name="filter" class="form-control">
+                                    <option value="hourly" <?= $filterType == 'hourly' ? 'selected' : '' ?>>Hourly</option>
+                                    <option value="daily" <?= $filterType == 'daily' ? 'selected' : '' ?>>Daily</option>
+                                    <option value="weekly" <?= $filterType == 'weekly' ? 'selected' : '' ?>>Weekly</option>
+                                    <option value="monthly" <?= $filterType == 'monthly' ? 'selected' : '' ?>>Monthly</option>
+                                    <option value="yearly" <?= $filterType == 'yearly' ? 'selected' : '' ?>>Yearly</option>
+                                </select>
+                                <i class="fas fa-chevron-down dropdown-icon"></i> <!-- Font Awesome icon -->
+                            </div>
+                        </div>
 
+                        <!-- Start Date Input -->
+                        <div class="form-group col-md-4 col-sm-12">
+                            <label for="start_date" class="mr-2">Start Date and Time:</label>
+                            <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?= htmlspecialchars($startDate) ?>">
+                        </div>
 
-            <!-- Start Date Input -->
-            <div class="form-group col-md-4 col-sm-12">
-                <label for="start_date" class="mr-2">Start Date and Time:</label>
-                <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?= htmlspecialchars($startDate) ?>">
+                        <!-- End Date Input -->
+                        <div class="form-group col-md-4 col-sm-12">
+                            <label for="end_date" class="mr-2">End Date and Time:</label>
+                            <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?= htmlspecialchars($endDate) ?>">
+                        </div>
+                    </div>
+
+                    <!-- Filter Button -->
+                    <div class="form-group d-flex justify-content-start">
+                        <button type="submit" class="btn btn-primary me-2">Filter</button>
+                        <a href="history.php" class="btn btn-secondary">Clear Filters</a>
+                    </div>
+                </form>
             </div>
 
-            <!-- End Date Input -->
-            <div class="form-group col-md-4 col-sm-12">
-                <label for="end_date" class="mr-2">End Date and Time:</label>
-                <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?= htmlspecialchars($endDate) ?>">
-            </div>
-        </div>
-
-        <!-- Filter Button (aligned at the bottom left) -->
-        <div class="form-group  d-flex justify-content-start">
-            <button type="submit" class="btn btn-primary me-2">Filter</button>
-            <a href="history.php" class="btn btn-secondary">Clear Filters</a>
-        </div>
-    </form>
-</div>
-
-
-<?php include '../components/legend.php' ?>
-
-
-<?php if ($locationsResult && $locationsResult->num_rows > 0): ?>
-    <?php while ($locationRow = $locationsResult->fetch_assoc()): ?>
-<!-- Responsive Wrapper for Heading and Table -->
-<div class="container">
-    <h2><i class="bi bi-geo-alt-fill"></i> <?= htmlspecialchars($locationRow['location_name']) ?></h2>
-
-    <!-- Download PDF Button for each location -->
-    <button class="btn btn-success downloadPdf" data-location="<?= htmlspecialchars($locationRow['location_name']) ?>">
-        <i class="bi bi-file-earmark-pdf"></i> Download PDF
-    </button>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Period</th>
-                    <th>Avg Temperature (°C)</th>
-                    <th>Avg Humidity (%)</th>
-                    <th>Avg Heat Index (°C)</th>
-                    <th>Alert Level</th>
-                </tr>
-            </thead>
-            <tbody>
             <?php
             // Reset result pointer
-            $locationName = $locationRow['location_name'];
-            $stmt->execute(); // Execute the prepared statement again for new results
+            $stmt->execute();
             $result = $stmt->get_result();
 
-            $dataAvailable = false; // Track if data is available for the current location
-            while ($row = $result->fetch_assoc()) {
-                if ($row['location_name'] == $locationName) {
-                    // Use the updated function to get both alert level and class
-                    list($alertLevel, $alertClass) = getAlertLevelAndClass($row['avg_heat_index']);
-                    $dataAvailable = true; // Data exists for this location
-                    ?>
-                    <tr class="<?= $alertClass ?>">
-                        <td><?= formatPeriod($row['period'], $filterType) ?></td>
-                        <td><?= number_format($row['avg_temp'], 2) ?></td>
-                        <td><?= number_format($row['avg_humidity'], 2) ?></td>
-                        <td><?= number_format($row['avg_heat_index'], 2) ?></td>
-                        <td><?= $alertLevel ?></td> <!-- Displaying alert level text -->
-                    </tr>
-                    <?php
-                }
-            }
-            if (!$dataAvailable) {
-                echo '<tr><td colspan="5">No readings available for this location.</td></tr>';
-            }
+            $currentLocation = null;
+            while ($row = $result->fetch_assoc()):
+                if ($currentLocation !== $row['location_name']):
+                    if ($currentLocation !== null):
+                        // Close previous table if it exists
+                        echo '</tbody></table></div>';
+                    endif;
+                    $currentLocation = $row['location_name'];
             ?>
+                    <div class="container">
+                        <h2><i class="bi bi-geo-alt-fill"></i> <?= htmlspecialchars($currentLocation) ?></h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Period</th>
+                                    <th>Avg Temperature (°C)</th>
+                                    <th>Avg Humidity (%)</th>
+                                    <th>Avg Heat Index (°C)</th>
+                                    <th>Alert Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            <?php
+                endif;
+
+                // Determine alert level and CSS class
+                list($alertLevel, $alertClass) = getAlertLevelAndClass($row['avg_heat_index']);
+            ?>
+                <tr class="<?= htmlspecialchars($alertClass) ?>">
+                    <td><?= formatPeriod($row['period'], $filterType) ?></td>
+                    <td><?= htmlspecialchars(round($row['avg_temp'], 2)) ?></td>
+                    <td><?= htmlspecialchars(round($row['avg_humidity'], 2)) ?></td>
+                    <td><?= htmlspecialchars(round($row['avg_heat_index'], 2)) ?></td>
+                    <td><?= htmlspecialchars($alertLevel) ?></td>
+                </tr>
+            <?php endwhile; ?>
             </tbody>
-        </table>
-</div>
-
-    <?php endwhile; ?>
-<?php else: ?>
-    <p>No locations available for the selected filters.</p>
-<?php endif; ?>
-
-
-            <!-- Pagination Controls -->
-
+            </table>
         </div>
+
+        <?php
+        // Closing last location's table
+        if ($currentLocation !== null):
+        ?>
+        </div>
+        <?php endif; ?>
     </main>
 
     <!-- ======= Footer ======= -->

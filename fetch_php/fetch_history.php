@@ -1,34 +1,23 @@
 <?php
+// Get all available locations
+$allLocationsQuery = "SELECT DISTINCT location_name FROM sensor_readings ORDER BY location_name";
+$allLocationsResult = $conn->query($allLocationsQuery);
+$allLocations = [];
+while ($row = $allLocationsResult->fetch_assoc()) {
+    $allLocations[] = $row['location_name'];
+}
 
-// Set timezone to Philippines
-date_default_timezone_set('Asia/Manila');
-
-// Pagination variables
-$locationsPerPage = 100; // Number of location tables per page
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1; // Current page number
-$offset = ($page - 1) * $locationsPerPage; // Calculate offset
-
-// Get the total number of locations
-$totalLocationsQuery = "SELECT COUNT(DISTINCT location_name) AS total_locations FROM sensor_readings";
-$totalLocationsResult = $conn->query($totalLocationsQuery);
-$totalLocationsRow = $totalLocationsResult->fetch_assoc();
-$totalLocations = $totalLocationsRow['total_locations'];
-
-// Calculate total number of pages
-$totalPages = ceil($totalLocations / $locationsPerPage);
-
-// Fetch the current page's locations with pagination
-$locationsQuery = "SELECT DISTINCT location_name FROM sensor_readings LIMIT $locationsPerPage OFFSET $offset";
-$locationsResult = $conn->query($locationsQuery);
+// Get selected location from the form
+$selectedLocation = isset($_GET['location']) ? $_GET['location'] : '';
 
 // Get the filter type from the dropdown (hourly, daily, etc.)
 $filterType = isset($_GET['filter']) ? $_GET['filter'] : 'hourly';
 
-// Get the start and end date from the form, default to past week
+// Get the start and end date from the form, default to past year
 $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d H:i', strtotime('-1 year'));
 $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d H:i');
 
-// Prepare the SQL query to use alert_time instead of timestamp with date range
+// Prepare the SQL query with alert_time and location filter
 $sql = "
     SELECT location_name, 
            CASE 
@@ -42,34 +31,61 @@ $sql = "
            AVG(humidity) AS avg_humidity, 
            AVG(heat_index) AS avg_heat_index
     FROM sensor_readings
-    WHERE alert_time >= ? AND alert_time <= ?
-    GROUP BY location_name, period
-    ORDER BY location_name, period DESC";
+    WHERE alert_time >= ? AND alert_time <= ?";
 
+// If a location is selected, add it to the WHERE clause
+if ($selectedLocation !== '') {
+    $sql .= " AND location_name = ?";
+}
+
+$sql .= " GROUP BY location_name, period ORDER BY location_name, period DESC";
+
+// Prepare the statement
 $stmt = $conn->prepare($sql);
 
-// Bind all parameters (5 for filterType and 2 for startDate and endDate)
-$stmt->bind_param("sssssss", $filterType, $filterType, $filterType, $filterType, $filterType, $startDate, $endDate);
+if ($stmt === false) {
+    die('Prepare failed: ' . $conn->error); // Handle error
+}
+
+// Create the parameters array based on whether a location is selected
+if ($selectedLocation !== '') {
+    // Include the selected location in the parameters
+    $params = [$filterType, $filterType, $filterType, $filterType, $filterType, $startDate, $endDate, $selectedLocation];
+    $types = 'sssssss' . 's'; // 7 's' for the previous params, 1 for location
+} else {
+    // Exclude the location if it's not selected
+    $params = [$filterType, $filterType, $filterType, $filterType, $filterType, $startDate, $endDate];
+    $types = 'sssssss'; // 7 's' for the parameters without location
+}
+
+// Create an array of references for bind_param
+$refs = [];
+foreach ($params as $key => $value) {
+    $refs[$key] = &$params[$key]; // References needed for bind_param
+}
+
+// Bind the parameters dynamically
+call_user_func_array([$stmt, 'bind_param'], array_merge([$types], $refs));
+
+// Execute the query
 $stmt->execute();
 $result = $stmt->get_result();
+
 
 // Function to determine the background color class based on the heat index
 function getAlertLevelAndClass($heatIndex) {
     if ($heatIndex < 27) {
         return ['Not Hazardous', 'normal']; // Normal (<27°C)
-    } elseif ($heatIndex >= 27 && $heatIndex < 33) { // Caution is < 33
+    } elseif ($heatIndex < 33) { // Caution is < 33
         return ['Caution', 'caution']; // Caution (27°C - <33°C)
-    } elseif ($heatIndex >= 33 && $heatIndex < 42) { // Extreme Caution is < 42
+    } elseif ($heatIndex < 42) { // Extreme Caution is < 42
         return ['Extreme Caution', 'extreme-caution']; // Extreme Caution (33°C - <42°C)
-    } elseif ($heatIndex >= 42 && $heatIndex < 52) { // Danger is < 52
+    } elseif ($heatIndex < 52) { // Danger is < 52
         return ['Danger', 'danger']; // Danger (42°C - <52°C)
     } else {
         return ['Extreme Danger', 'extreme-danger']; // Extreme Danger (>=52°C)
     }
 }
-
-
-
 
 // Helper function to format the period column in a more human-readable way
 function formatPeriod($period, $filterType) {

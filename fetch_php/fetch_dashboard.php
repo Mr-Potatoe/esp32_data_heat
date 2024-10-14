@@ -7,6 +7,12 @@ $chartsPerPage = 100; // Adjust this value to control the number of charts displ
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $chartsPerPage;
 
+// Get the selected location from the URL, default to an empty string if not set
+$selectedLocation = isset($_GET['location']) ? $_GET['location'] : '';
+
+// Escape the selected location to prevent SQL injection
+$selectedLocationEscaped = $conn->real_escape_string($selectedLocation);
+
 // Query to get total number of locations
 $totalLocationsQuery = "SELECT COUNT(DISTINCT location_name) AS total_locations FROM sensor_readings";
 $totalLocationsResult = $conn->query($totalLocationsQuery);
@@ -15,12 +21,19 @@ $totalLocations = $totalLocationsResult->fetch_assoc()['total_locations'];
 // Calculate the total number of pages
 $totalPages = ceil($totalLocations / $chartsPerPage);
 
-// Fetch sensor readings grouped by location with pagination
+// Fetch sensor readings grouped by location with pagination and filtering by selected location
 $query = "SELECT location_name, AVG(temperature) AS avg_temperature, AVG(humidity) AS avg_humidity, AVG(heat_index) AS avg_heat_index
-          FROM sensor_readings
-          GROUP BY location_name
-          ORDER BY location_name
-          LIMIT $chartsPerPage OFFSET $offset"; // Limit the query for pagination
+          FROM sensor_readings";
+
+// Add WHERE clause for location filter if a location is selected
+if (!empty($selectedLocation)) {
+    $query .= " WHERE location_name = '$selectedLocationEscaped'";
+}
+
+$query .= " GROUP BY location_name
+            ORDER BY location_name
+            LIMIT $chartsPerPage OFFSET $offset"; // Limit the query for pagination
+
 $result = $conn->query($query);
 
 // Prepare data for charts
@@ -30,7 +43,7 @@ $avgHumidity = [];
 $avgHeatIndexes = [];
 
 if ($result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
+    while ($row = $result->fetch_assoc()) {
         $locations[] = htmlspecialchars($row['location_name']);
         $avgTemperatures[] = floatval($row['avg_temperature']);
         $avgHumidity[] = floatval($row['avg_humidity']);
@@ -76,8 +89,14 @@ if (!empty($endDate)) {
     $query_time_series .= " AND alert_time <= '$endDate'";
 }
 
+// Append location filter if selected
+if (!empty($selectedLocation)) {
+    $query_time_series .= " AND location_name = '$selectedLocationEscaped'";
+}
+
 $query_time_series .= " GROUP BY time_label, location_name ORDER BY alert_time";
 
+// Execute the time series query
 $result_time_series = $conn->query($query_time_series);
 
 // Prepare data for line charts
