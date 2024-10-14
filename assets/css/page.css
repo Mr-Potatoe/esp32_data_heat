@@ -82,6 +82,8 @@ th {
     border-radius: 5px;
 }
 
+
+
 /* For devices with a maximum width of 1200px (large tablets and small laptops) */
 @media (max-width: 1200px) {
     table {

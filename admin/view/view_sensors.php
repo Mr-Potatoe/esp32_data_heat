@@ -102,25 +102,10 @@ $conn = dbConnect();
 
 <main id="main" class="main">
 <div class="container">
-    <h2>Sensor Data View</h2>
-    <!-- Legend -->
-<div class="legend">
-    <div>
-        <div class="legend-color normal"></div> Not Hazardous (&lt; 27°C)
-    </div>
-    <div>
-        <div class="legend-color caution"></div> Caution (27°C - 32°C)
-    </div>
-    <div>
-        <div class="legend-color extreme-caution"></div> Extreme Caution (33°C - 41°C)
-    </div>
-    <div>
-        <div class="legend-color danger"></div> Danger (42°C - 51°C)
-    </div>
-    <div>
-        <div class="legend-color extreme-danger"></div> Extreme Danger (&ge; 52°C)
-    </div>
-</div>
+<h2><i class="bi bi-speedometer2"></i> Sensor Data View</h2>
+
+
+<?php include '../components/legend.php' ?>
 
 
 
@@ -216,25 +201,25 @@ $conn = dbConnect();
     <nav aria-label="Page navigation">
     <ul class="pagination justify-content-center">
         <!-- First Button -->
-        <li class="page-item <?= ($currentPage == 1) ? 'disabled' : '' ?>">
-            <a href="?page=1&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link">First</a>
+        <li class="page-item <?= ($currentPage == 1) ? 'disabled' : '' ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="First">
+            <a href="?page=1&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link">
+                <i class="bi bi-skip-backward-fill"></i>
+            </a>
         </li>
 
         <!-- Previous Button -->
-        <li class="page-item <?= ($currentPage == 1) ? 'disabled' : '' ?>">
-            <a href="?page=<?= max(1, $currentPage - 1) ?>&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link">Previous</a>
+        <li class="page-item <?= ($currentPage == 1) ? 'disabled' : '' ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Previous">
+            <a href="?page=<?= max(1, $currentPage - 1) ?>&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link">
+                <i class="bi bi-chevron-left"></i>
+            </a>
         </li>
 
         <!-- Page Numbers -->
         <?php
-        // Define how many buttons you want to show (e.g., 5)
         $visiblePages = 5;
-
-        // Calculate the start and end page numbers for the pagination buttons
         $startPage = max(1, $currentPage - floor($visiblePages / 2));
         $endPage = min($totalPages, $currentPage + floor($visiblePages / 2));
 
-        // Adjust if we're near the beginning or end of the page list
         if ($currentPage <= floor($visiblePages / 2)) {
             $endPage = min($visiblePages, $totalPages);
         }
@@ -249,16 +234,21 @@ $conn = dbConnect();
         <?php endfor; ?>
 
         <!-- Next Button -->
-        <li class="page-item <?= ($currentPage == $totalPages) ? 'disabled' : '' ?>">
-            <a href="?page=<?= min($totalPages, $currentPage + 1) ?>&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link">Next</a>
+        <li class="page-item <?= ($currentPage == $totalPages) ? 'disabled' : '' ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Next">
+            <a href="?page=<?= min($totalPages, $currentPage + 1) ?>&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link">
+                <i class="bi bi-chevron-right"></i>
+            </a>
         </li>
 
         <!-- Last Button -->
-        <li class="page-item <?= ($currentPage == $totalPages) ? 'disabled' : '' ?>">
-            <a href="?page=<?= $totalPages ?>&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link">Last</a>
+        <li class="page-item <?= ($currentPage == $totalPages) ? 'disabled' : '' ?>" data-bs-toggle="tooltip" data-bs-placement="top" title="Last">
+            <a href="?page=<?= $totalPages ?>&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link">
+                <i class="bi bi-skip-forward-fill"></i>
+            </a>
         </li>
     </ul>
 </nav>
+
 
 
 

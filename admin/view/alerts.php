@@ -29,10 +29,10 @@ $conn = dbConnect();
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s;
         }
-
+/* 
         .card:hover {
             transform: scale(1.05);
-        }
+        } */
     .pagination .page-item.active .page-link {
         background-color: #007bff;
         color: white;
@@ -78,41 +78,42 @@ $conn = dbConnect();
     <div class="container">
         <h1 class="text-center mb-4">Heat Index Alerts</h1>
 
-        <!-- Summary Section with responsive cards -->
-        <div class="row text-center mb-4">
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card bg-light p-3 h-100">
-                    <h4>Total Alerts</h4>
-                    <p class="display-4"><?php echo $totalAlertsData['total_alerts']; ?></p>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card bg-light p-3 h-100">
-                    <h4>Highest Heat Index</h4>
-                    <?php if (isset($summaryData['highest_heat_index'])): ?>
-                        <p class="display-4"><?php echo number_format($summaryData['highest_heat_index'], 2); ?> °C</p>
-                    <?php else: ?>
-                        <p class="display-4">N/A</p>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card bg-light p-3 h-100">
-                    <h4>Location of Highest Heat Index</h4>
-                    <?php if (isset($summaryData['location_name'])): ?>
-                        <p class="display-4"><?php echo htmlspecialchars($summaryData['location_name']); ?></p>
-                    <?php else: ?>
-                        <p class="display-4">N/A</p>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card bg-light p-3 h-100">
-                    <h4>Total Locations</h4>
-                    <p class="display-4"><?php echo $locationSummaryData['total_locations']; ?></p>
-                </div>
-            </div>
+      <!-- Summary Section with responsive cards -->
+<div class="row text-center mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-light p-3 h-100">
+            <h5 class="text-muted"><i class="bi bi-exclamation-triangle-fill"></i> Total Alerts</h5>
+            <p class="display-4"><?php echo $totalAlertsData['total_alerts']; ?></p>
         </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-light p-3 h-100">
+            <h5 class="text-muted"><i class="bi bi-thermometer-half"></i> Highest Heat Index</h5>
+            <?php if (isset($summaryData['highest_heat_index'])): ?>
+                <p class="display-4 text-danger"><?php echo number_format($summaryData['highest_heat_index'], 2); ?> °C</p>
+            <?php else: ?>
+                <p class="display-4">N/A</p>
+            <?php endif; ?>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-light p-3 h-100">
+            <h5 class="text-muted"><i class="bi bi-geo-alt-fill"></i> Location of Highest Heat Index</h5>
+            <?php if (isset($summaryData['location_name'])): ?>
+                <p class="display-4"><?php echo htmlspecialchars($summaryData['location_name']); ?></p>
+            <?php else: ?>
+                <p class="display-4">N/A</p>
+            <?php endif; ?>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-light p-3 h-100">
+            <h5 class="text-muted"><i class="bi bi-building"></i> Total Locations</h5>
+            <p class="display-4"><?php echo $locationSummaryData['total_locations']; ?></p>
+        </div>
+    </div>
+</div>
+
 
         <!-- Chart Section -->
         <div class="row">
@@ -125,16 +126,15 @@ $conn = dbConnect();
         </div>
 
         <!-- Alerts Table with hover effect and responsive design -->
-        <h3 class="text-center mb-2">Detailed Alerts</h3> <!-- Table label -->
+        <h3 class="text-center mb-2">Recent Alerts (Past 24 Hours)</h3> <!-- Table label -->
 
 
-<div class="card p-3 mb-4 filter-form">
-    <h5 class="card-title">Filter Alerts</h5>
+        <div class="card p-3 mb-4 filter-form shadow-sm">
+    <h5 class="card-title mb-3">Filter Alerts</h5>
     <form method="GET" action="" class="mb-3">
-        <div class="form-row d-flex flex-wrap">
-
+        <div class="row g-3">
             <!-- Location Filter -->
-            <div class="form-group col-md-4 col-sm-12">
+            <div class="col-md-4 col-sm-12">
                 <label for="location" class="form-label">Location</label>
                 <select class="form-select" name="location" id="location">
                     <option value="">All Locations</option>
@@ -151,7 +151,7 @@ $conn = dbConnect();
             </div>
 
             <!-- Alert Level Filter -->
-            <div class="form-group col-md-4 col-sm-12">
+            <div class="col-md-4 col-sm-12">
                 <label for="alert_level" class="form-label">Alert Level</label>
                 <select class="form-select" name="alert_level" id="alert_level">
                     <option value="">All Alert Levels</option>
@@ -162,47 +162,18 @@ $conn = dbConnect();
                     <option value="Extreme Danger" <?php if (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Extreme Danger') echo 'selected'; ?>>Extreme Danger</option>
                 </select>
             </div>
-
-            <!-- Start Date Filter -->
-            <div class="form-group col-md-4 col-sm-12">
-                <label for="start_date" class="form-label">Start Date</label>
-                <input type="date" class="form-control" name="start_date" id="start_date" value="<?php echo isset($_GET['start_date']) ? $_GET['start_date'] : ''; ?>">
-            </div>
-
-            <!-- End Date Filter -->
-            <div class="form-group col-md-4 col-sm-12">
-                <label for="end_date" class="form-label">End Date</label>
-                <input type="date" class="form-control" name="end_date" id="end_date" value="<?php echo isset($_GET['end_date']) ? $_GET['end_date'] : ''; ?>">
-            </div>
-
         </div>
 
         <!-- Filter Buttons -->
-        <div class="d-flex justify-content-start">
+        <div class="d-flex justify-content-start mt-4">
             <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
             <a href="alerts.php" class="btn btn-secondary">Clear Filters</a>
         </div>
     </form>
 </div>
 
-                    <!-- Legend -->
-                    <div class="legend">
-    <div>
-        <div class="legend-color normal"></div> Not Hazardous (&lt; 27°C)
-    </div>
-    <div>
-        <div class="legend-color caution"></div> Caution (27°C - 32°C)
-    </div>
-    <div>
-        <div class="legend-color extreme-caution"></div> Extreme Caution (33°C - 41°C)
-    </div>
-    <div>
-        <div class="legend-color danger"></div> Danger (42°C - 51°C)
-    </div>
-    <div>
-        <div class="legend-color extreme-danger"></div> Extreme Danger (&ge; 52°C)
-    </div>
-</div>
+
+<?php include '../components/legend.php' ?>
 
 
         <table>
@@ -263,15 +234,15 @@ $conn = dbConnect();
     <ul class="pagination justify-content-center">
         <!-- First button -->
         <li class="page-item <?php if ($page <= 1) { echo 'disabled'; } ?>">
-            <a class="page-link" href="?page=1&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" aria-label="First">
-                First
+            <a class="page-link" href="?page=1&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" aria-label="First" data-bs-toggle="tooltip" data-bs-placement="top" title="First">
+                <i class="bi bi-skip-backward-fill"></i>
             </a>
         </li>
 
         <!-- Previous button -->
         <li class="page-item <?php if ($page <= 1) { echo 'disabled'; } ?>">
-            <a class="page-link" href="?page=<?php echo $page - 1; ?>&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" aria-label="Previous">
-                Previous
+            <a class="page-link" href="?page=<?php echo $page - 1; ?>&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" aria-label="Previous" data-bs-toggle="tooltip" data-bs-placement="top" title="Previous">
+                <i class="bi bi-chevron-left"></i>
             </a>
         </li>
 
@@ -292,19 +263,20 @@ $conn = dbConnect();
 
         <!-- Next button -->
         <li class="page-item <?php if ($page >= $totalPages) { echo 'disabled'; } ?>">
-            <a class="page-link" href="?page=<?php echo $page + 1; ?>&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" aria-label="Next">
-                Next
+            <a class="page-link" href="?page=<?php echo $page + 1; ?>&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" aria-label="Next" data-bs-toggle="tooltip" data-bs-placement="top" title="Next">
+                <i class="bi bi-chevron-right"></i>
             </a>
         </li>
 
         <!-- Last button -->
         <li class="page-item <?php if ($page >= $totalPages) { echo 'disabled'; } ?>">
-            <a class="page-link" href="?page=<?php echo $totalPages; ?>&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" aria-label="Last">
-                Last
+            <a class="page-link" href="?page=<?php echo $totalPages; ?>&location=<?php echo urlencode($location); ?>&alert_level=<?php echo urlencode($alert_level); ?>&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" aria-label="Last" data-bs-toggle="tooltip" data-bs-placement="top" title="Last">
+                <i class="bi bi-skip-forward-fill"></i>
             </a>
         </li>
     </ul>
 </nav>
+
 
 
 

@@ -79,7 +79,7 @@ $conn = dbConnect(); // Connect to the database
 
     <main id="main" class="main">
     <div class="container">
-        <h1 class="mt-4">Sensor Readings Dashboard</h1>
+        <h1 class="mt-4"><i class="fas fa-chart-line me-2"></i>Sensor Readings Dashboard</h1>
 
         <div class="card p-3 mb-4 filter-form">
     <h5 class="card-title">Filter Data</h5>

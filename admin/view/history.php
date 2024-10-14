@@ -86,7 +86,8 @@ $conn = dbConnect();
 
     <main id="main" class="main">
         <div class="container">
-            <h1>Heatmap Table Data by Location</h1>
+        <h1><i class="bi bi-table"></i> Heatmap Table Data by Location</h1>
+
 
     
 
@@ -134,34 +135,19 @@ $conn = dbConnect();
 </div>
 
 
-            <!-- Legend -->
-<div class="legend">
-    <div>
-        <div class="legend-color normal"></div> Not Hazardous (&lt; 27°C)
-    </div>
-    <div>
-        <div class="legend-color caution"></div> Caution (27°C - 32°C)
-    </div>
-    <div>
-        <div class="legend-color extreme-caution"></div> Extreme Caution (33°C - 41°C)
-    </div>
-    <div>
-        <div class="legend-color danger"></div> Danger (42°C - 51°C)
-    </div>
-    <div>
-        <div class="legend-color extreme-danger"></div> Extreme Danger (&ge; 52°C)
-    </div>
-</div>
+<?php include '../components/legend.php' ?>
 
 
 <?php if ($locationsResult && $locationsResult->num_rows > 0): ?>
     <?php while ($locationRow = $locationsResult->fetch_assoc()): ?>
-        <h2>Location: <?= htmlspecialchars($locationRow['location_name']) ?></h2>
+<!-- Responsive Wrapper for Heading and Table -->
+<div class="container">
+    <h2><i class="bi bi-geo-alt-fill"></i> <?= htmlspecialchars($locationRow['location_name']) ?></h2>
 
-        <!-- Download PDF Button for each location -->
-        <button class="btn btn-success downloadPdf" data-location="<?= htmlspecialchars($locationRow['location_name']) ?>">
-            <i class="bi bi-file-earmark-pdf"></i> Download PDF
-        </button>
+    <!-- Download PDF Button for each location -->
+    <button class="btn btn-success downloadPdf" data-location="<?= htmlspecialchars($locationRow['location_name']) ?>">
+        <i class="bi bi-file-earmark-pdf"></i> Download PDF
+    </button>
 
         <table>
             <thead>
@@ -174,37 +160,37 @@ $conn = dbConnect();
                 </tr>
             </thead>
             <tbody>
-            <tbody>
-    <?php
-    // Reset result pointer
-    $locationName = $locationRow['location_name'];
-    $stmt->execute(); // Execute the prepared statement again for new results
-    $result = $stmt->get_result();
-
-    $dataAvailable = false; // Track if data is available for the current location
-    while ($row = $result->fetch_assoc()) {
-        if ($row['location_name'] == $locationName) {
-            // Use the updated function to get both alert level and class
-            list($alertLevel, $alertClass) = getAlertLevelAndClass($row['avg_heat_index']);
-            $dataAvailable = true; // Data exists for this location
-            ?>
-            <tr class="<?= $alertClass ?>">
-                <td><?= formatPeriod($row['period'], $filterType) ?></td>
-                <td><?= number_format($row['avg_temp'], 2) ?></td>
-                <td><?= number_format($row['avg_humidity'], 2) ?></td>
-                <td><?= number_format($row['avg_heat_index'], 2) ?></td>
-                <td><?= $alertLevel ?></td> <!-- Displaying alert level text -->
-            </tr>
             <?php
-        }
-    }
-    if (!$dataAvailable) {
-        echo '<tr><td colspan="5">No readings available for this location.</td></tr>';
-    }
-    ?>
-</tbody>
+            // Reset result pointer
+            $locationName = $locationRow['location_name'];
+            $stmt->execute(); // Execute the prepared statement again for new results
+            $result = $stmt->get_result();
 
+            $dataAvailable = false; // Track if data is available for the current location
+            while ($row = $result->fetch_assoc()) {
+                if ($row['location_name'] == $locationName) {
+                    // Use the updated function to get both alert level and class
+                    list($alertLevel, $alertClass) = getAlertLevelAndClass($row['avg_heat_index']);
+                    $dataAvailable = true; // Data exists for this location
+                    ?>
+                    <tr class="<?= $alertClass ?>">
+                        <td><?= formatPeriod($row['period'], $filterType) ?></td>
+                        <td><?= number_format($row['avg_temp'], 2) ?></td>
+                        <td><?= number_format($row['avg_humidity'], 2) ?></td>
+                        <td><?= number_format($row['avg_heat_index'], 2) ?></td>
+                        <td><?= $alertLevel ?></td> <!-- Displaying alert level text -->
+                    </tr>
+                    <?php
+                }
+            }
+            if (!$dataAvailable) {
+                echo '<tr><td colspan="5">No readings available for this location.</td></tr>';
+            }
+            ?>
+            </tbody>
         </table>
+</div>
+
     <?php endwhile; ?>
 <?php else: ?>
     <p>No locations available for the selected filters.</p>
