@@ -105,4 +105,15 @@ $query .= " ORDER BY alert_time DESC LIMIT $limit OFFSET $offset";
 // Execute query
 $result = $conn->query($query);
 
+$location_names = [];
+$alert_counts = [];
+
+while ($row = $chartResult->fetch_assoc()) {
+    $location_names[] = "'" . $row['location_name'] . "'";
+    $alert_counts[] = $row['alert_count'];
+}
+
+$location_names_str = implode(',', $location_names);
+$alert_counts_str = implode(',', $alert_counts);
+
 ?>

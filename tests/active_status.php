@@ -5,9 +5,9 @@ $conn = dbConnect(); // Connect to the database
 
 // Define the new location parameters
 $sensor_id = 77; // Use the sensor_id assigned above
-$latitude = 7.945608;
-$longitude = 123.587641;
-$location_name = 'Haumea';
+$latitude = 7.9480162;
+$longitude = 123.5881823;
+$location_name = 'Venus';
 
 // Prepare to insert data for the last 24 hours
 $currentTime = new DateTime(); // Get the current time

@@ -35,8 +35,7 @@
     
     <main id="main" class="main">
         <div class="container">
-        <h1 class="mb-4"><i class="fas fa-tachometer-alt"></i> Sensor Status Dashboard</h1>
-
+        <h1 class="mb-4"><i class="bi bi-tools"></i> Sensor Status</h1>
 
         <?php include '../components/legend.php' ?>
 

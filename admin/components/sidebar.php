@@ -6,14 +6,16 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <ul class="sidebar-nav" id="sidebar-nav">
 
         <?php 
-            $menu_items = [
-                ['link' => 'dashboard.php', 'icon' => 'bi-house', 'label' => 'Dashboard'],
-                ['link' => 'map.php', 'icon' => 'bi-map', 'label' => 'Heat Index Map'],
-                ['link' => 'sensor_status.php', 'icon' => 'bi-tools', 'label' => 'View Sensor Status'],
-                ['link' => 'view_sensors.php', 'icon' => 'bi-table', 'label' => 'View Sensors Data'],
-                ['link' => 'history.php', 'icon' => 'bi-clock', 'label' => 'Heat Index History'],
-                ['link' => 'alerts.php', 'icon' => 'bi-bell', 'label' => 'Alerts'],
-            ];
+        $menu_items = [
+            ['link' => 'dashboard.php', 'icon' => 'bi-house', 'label' => 'Sensor Dashboard'],
+            ['link' => 'map.php', 'icon' => 'bi-map', 'label' => 'Heat Index Map'],
+            ['link' => 'sensor_status.php', 'icon' => 'bi-tools', 'label' => 'Sensor Status'],
+            ['link' => 'view_sensors.php', 'icon' => 'bi-clock', 'label' => 'Sensor Data View' ],
+            ['link' => 'history.php', 'icon' => 'bi-table', 'label' => 'Location Table Data'],
+            ['link' => 'alerts.php', 'icon' => 'bi-bell', 'label' => '24-Hour Alerts'],
+        ];
+        
+        
     
 
         foreach ($menu_items as $item):

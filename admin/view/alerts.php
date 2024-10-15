@@ -18,7 +18,6 @@ $conn = dbConnect();
 <html lang="en">
 <head>
     <?php include '../components/head.php'; ?>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="../../assets/css/page.css">
 <style>
 
@@ -26,9 +25,11 @@ $conn = dbConnect();
         
         /* Custom styles for better UI/UX */
         .card {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s;
-        }
+    background-color: #f8f9fa; /* Light background for the card */
+    border: 1px solid #e1e1e1; /* Soft border */
+    border-radius: 5px; /* Rounded corners */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
 /* 
         .card:hover {
             transform: scale(1.05);
@@ -76,7 +77,7 @@ $conn = dbConnect();
 
     <main id="main" class="main">
     <div class="container">
-        <h1 class="text-center mb-4">Heat Index Alerts</h1>
+    <h1 class="mb-4 text-center"><i class="bi bi-bell"></i> 24-Hour Alerts</h1>
 
       <!-- Summary Section with responsive cards -->
 <div class="row text-center mb-4">
@@ -115,22 +116,73 @@ $conn = dbConnect();
 </div>
 
 
-        <!-- Chart Section -->
-        <div class="row">
-            <div class="col-12 mb-4">
-                <h3 class="text-center mb-2">Alerts by Location</h3> <!-- Chart label -->
-                <div class="card p-3">
-                    <canvas id="alertChart"></canvas> <!-- Placeholder for the chart -->
-                </div>
-            </div>
+ <!-- Chart Section -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <h3 class="text-center mb-2">Alerts by Location</h3> <!-- Chart label -->
+        <div class="card p-3">
+            <div id="alertChart" style="width: 100%; height: 100%;"></div> <!-- Placeholder for the chart -->
         </div>
+    </div>
+</div>
+
+<!-- ApexCharts Script -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<script>
+    const options = {
+        chart: {
+            type: 'bar',
+            height: 350,
+            toolbar: {
+                show: true
+            }
+        },
+        series: [{
+            name: 'Number of Alerts',
+            data: [<?php echo $alert_counts_str; ?>] // PHP generates this string
+        }],
+        xaxis: {
+            categories: [<?php echo $location_names_str; ?>], // PHP generates this string
+            title: {
+                text: 'Location'
+            }
+        },
+        yaxis: {
+            title: {
+                text: 'Number of Alerts',
+                rotate: -90
+            },
+            min: 0
+        },
+        title: {
+            text: 'Alerts by Location',
+            align: 'center'
+        },
+        plotOptions: {
+            bar: {
+                horizontal: false,
+                endingShape: 'rounded'
+            }
+        },
+        dataLabels: {
+            enabled: true
+        },
+        fill: {
+            opacity: 1
+        }
+    };
+
+    const alertChart = new ApexCharts(document.querySelector("#alertChart"), options);
+    alertChart.render();
+</script>
 
         <!-- Alerts Table with hover effect and responsive design -->
         <h3 class="text-center mb-2">Recent Alerts (Past 24 Hours)</h3> <!-- Table label -->
 
 
         <div class="card p-3 mb-4 filter-form shadow-sm">
-    <h5 class="card-title mb-3">Filter Alerts</h5>
+    <h5 class="card-title mb-3"><i class="bi bi-funnel me-2"></i>Filter Alerts</h5>
     <form method="GET" action="" class="mb-3">
         <div class="row g-3">
             <!-- Location Filter -->
@@ -166,8 +218,8 @@ $conn = dbConnect();
 
         <!-- Filter Buttons -->
         <div class="d-flex justify-content-start mt-4">
-            <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
-            <a href="alerts.php" class="btn btn-secondary">Clear Filters</a>
+            <button type="submit" class="btn btn-primary me-2"><i class="bi bi-search me-1"></i>Apply Filters</button>
+            <a href="alerts.php" class="btn btn-secondary"><i class="bi bi-arrow-clockwise me-1"></i>Clear Filters</a>
         </div>
     </form>
 </div>
@@ -292,47 +344,6 @@ $conn = dbConnect();
     <?php include '../components/footer.php'; ?>
     <?php include '../components/scripts.php'; ?>
 
-    <!-- Chart.js Script -->
-    <script>
-        const ctx = document.getElementById('alertChart').getContext('2d');
-        const alertChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: [
-                    <?php
-                    $location_names = [];
-                    $alert_counts = [];
-                    while ($row = $chartResult->fetch_assoc()) {
-                        $location_names[] = "'" . $row['location_name'] . "'";
-                        $alert_counts[] = $row['alert_count'];
-                    }
-                    echo implode(',', $location_names);
-                    ?>
-                ],
-                datasets: [{
-                    label: 'Number of Alerts by Location',
-                    data: [<?php echo implode(',', $alert_counts); ?>],
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                },
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                }
-            }
-        });
-    </script>
+
 </body>
 </html>

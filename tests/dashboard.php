@@ -1,51 +1,30 @@
 <?php
 
 require '../config.php'; // Configuration and database connection
-loadEnv(); // Load environment variables
-$conn = dbConnect(); // Connect to the database
+
+// Load environment variables
+loadEnv();
+
+// Connect to the database
+$conn = dbConnect();
+
+date_default_timezone_set('Asia/Manila');
 
 // Define how many charts to show per page
-$chartsPerPage = 2; // Adjust this value to control the number of charts displayed per page
+$chartsPerPage = 100; // Adjust this value to control the number of charts displayed per page
 
 // Get the current page from the URL, default to 1 if not set
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $chartsPerPage;
 
-// Query to get total number of locations
-$totalLocationsQuery = "SELECT COUNT(DISTINCT location_name) AS total_locations FROM sensor_readings";
-$totalLocationsResult = $conn->query($totalLocationsQuery);
-$totalLocations = $totalLocationsResult->fetch_assoc()['total_locations'];
-
-// Calculate the total number of pages
-$totalPages = ceil($totalLocations / $chartsPerPage);
-
-// Fetch sensor readings grouped by location with pagination
-$query = "SELECT location_name, AVG(temperature) AS avg_temperature, AVG(humidity) AS avg_humidity, AVG(heat_index) AS avg_heat_index
-          FROM sensor_readings
-          GROUP BY location_name
-          ORDER BY location_name
-          LIMIT $chartsPerPage OFFSET $offset"; // Limit the query for pagination
-$result = $conn->query($query);
-
-// Prepare data for charts
-$locations = [];
-$avgTemperatures = [];
-$avgHumidity = [];
-$avgHeatIndexes = [];
-
-if ($result->num_rows > 0) {
-    while($row = $result->fetch_assoc()) {
-        $locations[] = htmlspecialchars($row['location_name']);
-        $avgTemperatures[] = floatval($row['avg_temperature']);
-        $avgHumidity[] = floatval($row['avg_humidity']);
-        $avgHeatIndexes[] = floatval($row['avg_heat_index']);
-    }
-}
-
-// Get the selected time interval, start date, and end date
+// Get the selected location, time interval, start date, and end date from the URL
+$selectedLocation = isset($_GET['location']) ? $_GET['location'] : '';
 $interval = isset($_GET['interval']) ? $_GET['interval'] : 'hour';
 $startDate = isset($_GET['start_date']) ? $_GET['start_date'] : '';
 $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : '';
+
+// Escape the selected location to prevent SQL injection
+$selectedLocationEscaped = $conn->real_escape_string($selectedLocation);
 
 // Adjust the interval query based on the selected interval
 $interval_query = "";
@@ -67,190 +46,247 @@ switch ($interval) {
         break;
 }
 
-// Modify the time series query to include date filtering
-$query_time_series = "SELECT $interval_query, location_name, AVG(temperature) AS avg_temperature, AVG(humidity) AS avg_humidity, AVG(heat_index) AS avg_heat_index
-                      FROM sensor_readings
-                      WHERE alert_time IS NOT NULL";
+// Main query for both average and max heat index, grouped by location, with pagination and location filter
+$query_avg = "SELECT location_name, AVG(heat_index) AS avg_heat_index
+              FROM sensor_readings
+              WHERE 1=1"; // Default condition
 
-// Append start and end date conditions to the query if provided
+$query_max = "SELECT location_name, MAX(heat_index) AS max_heat_index
+              FROM sensor_readings
+              WHERE 1=1"; // Default condition
+
+// Add location, start date, and end date filters
+if (!empty($selectedLocation)) {
+    $query_avg .= " AND location_name = '$selectedLocationEscaped'";
+    $query_max .= " AND location_name = '$selectedLocationEscaped'";
+}
 if (!empty($startDate)) {
-    $query_time_series .= " AND alert_time >= '$startDate'";
+    $query_avg .= " AND alert_time >= '$startDate'";
+    $query_max .= " AND alert_time >= '$startDate'";
 }
 if (!empty($endDate)) {
-    $query_time_series .= " AND alert_time <= '$endDate'";
+    $query_avg .= " AND alert_time <= '$endDate'";
+    $query_max .= " AND alert_time <= '$endDate'";
 }
 
-$query_time_series .= " GROUP BY time_label, location_name ORDER BY alert_time";
+$query_avg .= " GROUP BY location_name ORDER BY location_name LIMIT $chartsPerPage OFFSET $offset";
+$query_max .= " GROUP BY location_name ORDER BY location_name LIMIT $chartsPerPage OFFSET $offset";
 
-$result_time_series = $conn->query($query_time_series);
+$result_avg = $conn->query($query_avg);
+$result_max = $conn->query($query_max);
 
-// Prepare data for line charts
+// Prepare data for charts
+$locations = [];
+$avgHeatIndexes = [];
+$maxHeatIndexes = [];
+
+if ($result_avg->num_rows > 0) {
+    while ($row = $result_avg->fetch_assoc()) {
+        $locations[] = htmlspecialchars($row['location_name']);
+        $avgHeatIndexes[] = floatval($row['avg_heat_index']);
+    }
+}
+
+if ($result_max->num_rows > 0) {
+    while ($row = $result_max->fetch_assoc()) {
+        $maxHeatIndexes[] = floatval($row['max_heat_index']);
+    }
+}
+
+// Query for time series data, grouped by time interval, for average and max heat index
+$query_time_series_avg = "SELECT $interval_query, location_name, AVG(heat_index) AS avg_heat_index
+                          FROM sensor_readings
+                          WHERE alert_time IS NOT NULL";
+
+$query_time_series_max = "SELECT $interval_query, location_name, MAX(heat_index) AS max_heat_index
+                          FROM sensor_readings
+                          WHERE alert_time IS NOT NULL";
+
+// Apply date filters
+if (!empty($startDate)) {
+    $query_time_series_avg .= " AND alert_time >= '$startDate'";
+    $query_time_series_max .= " AND alert_time >= '$startDate'";
+}
+if (!empty($endDate)) {
+    $query_time_series_avg .= " AND alert_time <= '$endDate'";
+    $query_time_series_max .= " AND alert_time <= '$endDate'";
+}
+
+// Add location filter if selected
+if (!empty($selectedLocation)) {
+    $query_time_series_avg .= " AND location_name = '$selectedLocationEscaped'";
+    $query_time_series_max .= " AND location_name = '$selectedLocationEscaped'";
+}
+
+$query_time_series_avg .= " GROUP BY time_label, location_name ORDER BY alert_time";
+$query_time_series_max .= " GROUP BY time_label, location_name ORDER BY alert_time";
+
+$result_time_series_avg = $conn->query($query_time_series_avg);
+$result_time_series_max = $conn->query($query_time_series_max);
+
+// Prepare data for line charts (average and highest heat index)
 $locationData = [];
-if ($result_time_series->num_rows > 0) {
-    while ($row = $result_time_series->fetch_assoc()) {
-        $timeLabel = htmlspecialchars($row['time_label']);
-        $locationName = htmlspecialchars($row['location_name']);
+if ($result_time_series_avg->num_rows > 0 || $result_time_series_max->num_rows > 0) {
+    while ($row_avg = $result_time_series_avg->fetch_assoc()) {
+        $timeLabel = htmlspecialchars($row_avg['time_label']);
+        $locationName = htmlspecialchars($row_avg['location_name']);
         
         if (!isset($locationData[$locationName])) {
             $locationData[$locationName] = [
                 'timeLabels' => [],
-                'avgTemperatures' => [],
-                'avgHumidity' => [],
-                'avgHeatIndexes' => []
+                'avgHeatIndexes' => [],
+                'maxHeatIndexes' => []
             ];
         }
         
         $locationData[$locationName]['timeLabels'][] = $timeLabel;
-        $locationData[$locationName]['avgTemperatures'][] = floatval($row['avg_temperature']);
-        $locationData[$locationName]['avgHumidity'][] = floatval($row['avg_humidity']);
-        $locationData[$locationName]['avgHeatIndexes'][] = floatval($row['avg_heat_index']);
+        $locationData[$locationName]['avgHeatIndexes'][] = floatval($row_avg['avg_heat_index']);
+    }
+
+    while ($row_max = $result_time_series_max->fetch_assoc()) {
+        $locationName = htmlspecialchars($row_max['location_name']);
+        
+        if (isset($locationData[$locationName])) {
+            $locationData[$locationName]['maxHeatIndexes'][] = floatval($row_max['max_heat_index']);
+        }
     }
 }
 
 // Display message if no data is available
-$noDataMessage = empty($locations) ? "No data available for the selected time interval." : "";
+$noDataMessage = empty($locations) ? "No data available" : "";
 
-// Prepare the data for the front end
-$chartData = [];
-foreach ($locations as $index => $location) {
-    $chartData[] = [
-        'locationName' => $location,
-        'avgTemperature' => $avgTemperatures[$index],
-        'avgHumidity' => $avgHumidity[$index],
-        'avgHeatIndex' => $avgHeatIndexes[$index],
-    ];
-}
-
-// Optionally, encode the locationData for JavaScript if needed
-$locationDataJson = json_encode($locationData);
 ?>
-
-
-<div class="card p-3 mb-4 filter-form">
-    <h5 class="card-title">Filter Data</h5>
-    <form method="GET">
-        <div class="form-row d-flex flex-wrap">
-            <!-- Time Filter Dropdown with Icon -->
-            <div class="form-group col-md-4 col-sm-12">
-                <label for="interval" class="mr-2">Select Time Interval:</label>
-                <div class="dropdown-icon-wrapper">
-                    <select id="interval" name="interval" class="form-control">
-                        <option value="hour" <?= $interval === 'hour' ? 'selected' : ''; ?>>Hourly</option>
-                        <option value="day" <?= $interval === 'day' ? 'selected' : ''; ?>>Daily</option>
-                        <option value="week" <?= $interval === 'week' ? 'selected' : ''; ?>>Weekly</option>
-                        <option value="month" <?= $interval === 'month' ? 'selected' : ''; ?>>Monthly</option>
-                        <option value="year" <?= $interval === 'year' ? 'selected' : ''; ?>>Yearly</option>
-                    </select>
-                    <i class="fas fa-chevron-down dropdown-icon"></i> <!-- Font Awesome icon -->
-                </div>
-            </div>
-
-            <!-- Start Date Input -->
-            <div class="form-group col-md-4 col-sm-12">
-                <label for="start_date" class="mr-2">Start Date and Time:</label>
-                <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?= htmlspecialchars(isset($_GET['start_date']) ? $_GET['start_date'] : ''); ?>" required>
-            </div>
-
-            <!-- End Date Input -->
-            <div class="form-group col-md-4 col-sm-12">
-                <label for="end_date" class="mr-2">End Date and Time:</label>
-                <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?= htmlspecialchars(isset($_GET['end_date']) ? $_GET['end_date'] : ''); ?>" required>
-            </div>
-        </div>
-
-        <!-- Filter Button -->
-        <div class="d-flex justify-content-start mt-3">
-            <button type="submit" class="btn btn-primary">Filter</button>
-            <a href="../../generate_pdf/generate_report.php?interval=<?= $interval; ?>&start_date=<?= htmlspecialchars($startDate); ?>&end_date=<?= htmlspecialchars($endDate); ?>" class="btn btn-secondary ms-2" target="_blank">Download PDF</a>
-        </div>
-    </form>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
     <!-- Include jQuery from a CDN -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
+<div class="card p-3 mb-4 filter-form">
+            <h5 class="card-title">Filter Data</h5>
+            <form method="GET">
+                <div class="form-row d-flex flex-wrap">
 
-     <!-- Individual Bar and Line Charts for Each Location -->
-     <div id="charts" class="row">
-    <?php 
-    // Reverse the locations array to render the latest data first
-    $reversedLocations = array_reverse($locations);
-    
-    foreach ($reversedLocations as $index => $locationName): 
-        ?>
-            <div class="col-lg-6 col-md-12 mb-4">
-                <div class="card shadow-sm rounded h-100 card-hover" style="border: none; transition: transform 0.2s;">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Average Readings</h4>
-                            <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #666; font-weight: bold;">
-                                <?php
-                                    // Check if there's data for the location
-                                    if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
-                                        // Get the latest time label
-                                        $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
-                                        $formattedTimeLabel = date("F j, Y, g:i A", strtotime($latestTimeLabel));
-                                        echo '<span data-toggle="tooltip" title="Full Time: ' . htmlspecialchars($latestTimeLabel) . '">' . htmlspecialchars($formattedTimeLabel) . '</span>';
-                                    } else {
-                                        // No data message
-                                        echo "No data available";
-                                    }
-                                ?>
-                            </div>
+                   <!-- Location Filter Dropdown -->
+                   <div class="form-group col-md-4 col-sm-12">
+                        <label for="location" class="mr-2">Select Location:</label>
+                        <select id="location" name="location" class="form-control">
+                            <option value="">All Locations</option>
+                            <?php foreach ($locations as $location): ?>
+                                <option value="<?= htmlspecialchars($location); ?>" <?= (isset($_GET['location']) && $_GET['location'] === $location) ? 'selected' : ''; ?>><?= htmlspecialchars($location); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <!-- Time Filter Dropdown with Icon -->
+                    <div class="form-group col-md-4 col-sm-12">
+                        <label for="interval" class="mr-2">Select Time Interval:</label>
+                        <div class="dropdown-icon-wrapper">
+                            <select id="interval" name="interval" class="form-control">
+                                <option value="hour" <?= $interval === 'hour' ? 'selected' : ''; ?>>Hourly</option>
+                                <option value="day" <?= $interval === 'day' ? 'selected' : ''; ?>>Daily</option>
+                                <option value="week" <?= $interval === 'week' ? 'selected' : ''; ?>>Weekly</option>
+                                <option value="month" <?= $interval === 'month' ? 'selected' : ''; ?>>Monthly</option>
+                                <option value="year" <?= $interval === 'year' ? 'selected' : ''; ?>>Yearly</option>
+                            </select>
+                            <i class="fas fa-chevron-down dropdown-icon"></i> <!-- Font Awesome icon -->
                         </div>
-                        <canvas id="barChart_<?php echo $index; ?>" style="height: 250px;"></canvas>
+                    </div>
+
+                    <!-- Start Date Input -->
+                    <div class="form-group col-md-4 col-sm-12">
+                        <label for="start_date" class="mr-2">Start Date and Time:</label>
+                        <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?= htmlspecialchars(isset($_GET['start_date']) ? $_GET['start_date'] : ''); ?>" required>
+                    </div>
+
+                    <!-- End Date Input -->
+                    <div class="form-group col-md-4 col-sm-12">
+                        <label for="end_date" class="mr-2">End Date and Time:</label>
+                        <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?= htmlspecialchars(isset($_GET['end_date']) ? $_GET['end_date'] : ''); ?>" required>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="form-group col-md-4 col-sm-12 align-self-end">
+                        <button type="submit" class="btn btn-primary">Filter</button>
                     </div>
                 </div>
-            </div>
-        <?php 
-        endforeach; 
-        ?>
-        
-</div>
+            </form>
+        </div>
 
-<!-- HTML and JavaScript to display charts go here -->
-<script>
-    const chartData = <?php echo json_encode($chartData); ?>;
-    const locationData = <?php echo $locationDataJson; ?>;
-
-    // Code to generate charts using Chart.js will go here.
- // Code to generate charts using Chart.js will go here.
-chartData.forEach((data, index) => {
-    const ctxBar = document.getElementById(`barChart_${index}`).getContext('2d');
-    new Chart(ctxBar, {
-        type: 'bar',
-        data: {
-            labels: ['Average Temperature (°C)', 'Average Humidity (%)', 'Average Heat Index'],
-            datasets: [{
-                label: data.locationName,
-                data: [data.avgTemperature, data.avgHumidity, data.avgHeatIndex],
-                backgroundColor: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(255, 206, 86, 0.6)'],
-                borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)'],
-                borderWidth: 2,
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: { beginAtZero: true }
-            },
-            plugins: {
-                legend: { display: false },
-                title: { display: true, text: `Average Readings for ${data.locationName}` },
-                tooltip: {
-                    callbacks: {
-                        label: function(tooltipItem) {
-                            return `${tooltipItem.dataset.label}: ${tooltipItem.raw}`;
+        <!-- Bar Chart Section -->
+        <canvas id="barChart"></canvas>
+        <script>
+            var ctxBar = document.getElementById('barChart').getContext('2d');
+            var barChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: <?= json_encode($locations); ?>,
+                    datasets: [{
+                        label: 'Average Heat Index',
+                        data: <?= json_encode($avgHeatIndexes); ?>,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }, {
+                        label: 'Max Heat Index',
+                        data: <?= json_encode($maxHeatIndexes); ?>,
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Heat Index'
+                            }
                         }
                     }
                 }
-            }
-        }
-    });
-});
+            });
+        </script>
 
-    // Handle pagination controls (optional)
-    // Code for pagination goes here
-</script>
+        <!-- Line Chart Section -->
+        <?php foreach ($locationData as $locationName => $data): ?>
+            <h5>Time Series Heat Index Data for <?= htmlspecialchars($locationName); ?></h5>
+            <canvas id="lineChart-<?= htmlspecialchars($locationName); ?>"></canvas>
+            <script>
+                var ctxLine = document.getElementById('lineChart-<?= htmlspecialchars($locationName); ?>').getContext('2d');
+                var lineChart = new Chart(ctxLine, {
+                    type: 'line',
+                    data: {
+                        labels: <?= json_encode($data['timeLabels']); ?>,
+                        datasets: [{
+                            label: 'Average Heat Index',
+                            data: <?= json_encode($data['avgHeatIndexes']); ?>,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }, {
+                            label: 'Max Heat Index',
+                            data: <?= json_encode($data['maxHeatIndexes']); ?>,
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Heat Index'
+                                }
+                            }
+                        }
+                    }
+                });
+            </script>
+        <?php endforeach; ?>
 
+<?php
+$conn->close(); // Close database connection
+?>

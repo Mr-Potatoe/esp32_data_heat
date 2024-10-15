@@ -13,10 +13,9 @@ $conn = dbConnect(); // Connect to the database
 <head>
     <?php include '../components/head.php'; ?>
     <title>Sensor Readings Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
-    <!-- Include jQuery from a CDN -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
+<!-- Script for Bar Chart -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <style>
         .container {
@@ -79,15 +78,17 @@ $conn = dbConnect(); // Connect to the database
 
     <main id="main" class="main">
     <div class="container">
-        <h1 class="mt-4"><i class="fas fa-chart-line me-2"></i>Sensor Readings Dashboard</h1>
+        <!-- Header with Icon -->
+        <h1 class="mt-4"><i class="bi bi-house me-2"></i>Sensor Dashboard</h1>
 
+        <!-- Filter Form in a Card -->
         <div class="card p-3 mb-4 filter-form">
-            <h5 class="card-title">Filter Data</h5>
+            <h5 class="card-title"><i class="bi bi-funnel me-2"></i>Filter Data</h5>
             <form method="GET">
                 <div class="form-row d-flex flex-wrap">
 
-                   <!-- Location Filter Dropdown -->
-                   <div class="form-group col-md-4 col-sm-12">
+                    <!-- Location Filter Dropdown -->
+                    <div class="form-group col-md-4 col-sm-12">
                         <label for="location" class="mr-2">Select Location:</label>
                         <select id="location" name="location" class="form-control">
                             <option value="">All Locations</option>
@@ -96,240 +97,343 @@ $conn = dbConnect(); // Connect to the database
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <!-- Time Filter Dropdown with Icon -->
+
+                    <!-- Time Interval Dropdown -->
                     <div class="form-group col-md-4 col-sm-12">
                         <label for="interval" class="mr-2">Select Time Interval:</label>
-                        <div class="dropdown-icon-wrapper">
-                            <select id="interval" name="interval" class="form-control">
-                                <option value="hour" <?= $interval === 'hour' ? 'selected' : ''; ?>>Hourly</option>
-                                <option value="day" <?= $interval === 'day' ? 'selected' : ''; ?>>Daily</option>
-                                <option value="week" <?= $interval === 'week' ? 'selected' : ''; ?>>Weekly</option>
-                                <option value="month" <?= $interval === 'month' ? 'selected' : ''; ?>>Monthly</option>
-                                <option value="year" <?= $interval === 'year' ? 'selected' : ''; ?>>Yearly</option>
-                            </select>
-                            <i class="fas fa-chevron-down dropdown-icon"></i> <!-- Font Awesome icon -->
-                        </div>
+                        <select id="interval" name="interval" class="form-control">
+                            <option value="hour" <?= $interval === 'hour' ? 'selected' : ''; ?>>Hourly</option>
+                            <option value="day" <?= $interval === 'day' ? 'selected' : ''; ?>>Daily</option>
+                            <option value="week" <?= $interval === 'week' ? 'selected' : ''; ?>>Weekly</option>
+                            <option value="month" <?= $interval === 'month' ? 'selected' : ''; ?>>Monthly</option>
+                            <option value="year" <?= $interval === 'year' ? 'selected' : ''; ?>>Yearly</option>
+                        </select>
                     </div>
 
-                    <!-- Start Date Input -->
+                                    <!-- Start Date -->
                     <div class="form-group col-md-4 col-sm-12">
                         <label for="start_date" class="mr-2">Start Date and Time:</label>
-                        <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="<?= htmlspecialchars(isset($_GET['start_date']) ? $_GET['start_date'] : ''); ?>" required>
+                        <input type="datetime-local" id="start_date" name="start_date" class="form-control" 
+                            value="<?= htmlspecialchars($startDate); ?>" required>
                     </div>
 
-                    <!-- End Date Input -->
+                    <!-- End Date -->
                     <div class="form-group col-md-4 col-sm-12">
                         <label for="end_date" class="mr-2">End Date and Time:</label>
-                        <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="<?= htmlspecialchars(isset($_GET['end_date']) ? $_GET['end_date'] : ''); ?>" required>
+                        <input type="datetime-local" id="end_date" name="end_date" class="form-control" 
+                            value="<?= htmlspecialchars($endDate); ?>" required>
                     </div>
 
-                 
-                </div>
 
-                <!-- Filter Button -->
-                <div class="d-flex justify-content-start mt-3">
-                    <button type="submit" class="btn btn-primary">Filter</button>
-                    <a href="dashboard.php" class="btn btn-secondary ms-2">Clear Filters</a>
+                    <!-- Submit Button -->
+                    <div class="form-group mt-4 col-md-4 col-sm-12 align-self-end">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-search me-1"></i>Filter</button>
+                        <a href="dashboard.php" class="btn btn-secondary"><i class="bi bi-arrow-clockwise me-1"></i>Clear Filters</a>
+                    </div>
                 </div>
             </form>
         </div>
 
-        <!-- Check if there are no locations and display the message -->
+        <!-- Alert if No Data -->
         <?php if (!empty($noDataMessage)): ?>
             <div class="alert alert-warning" role="alert">
-                <?php echo $noDataMessage; ?>
+                <?= $noDataMessage; ?>
             </div>
         <?php endif; ?>
 
-        <!-- Individual Bar and Line Charts for Each Location -->
-        <div id="charts" class="row">
-            <?php 
-            // Reverse the locations array to render the latest data first
-            $reversedLocations = array_reverse($locations);
-            
-            foreach ($reversedLocations as $index => $locationName): 
-                // Only render charts if the selected location matches or if no location is selected
-                if (empty($_GET['location']) || $_GET['location'] === $locationName): 
-            ?>
-                <div class="col-lg-6 col-md-12 mb-4">
-                    <div class="card shadow-sm rounded h-100 card-hover" style="border: none; transition: transform 0.2s;">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Average Readings</h4>
-                                <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #666; font-weight: bold;">
-                                    <?php
-                                        // Display the latest time label for the location
-                                        if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
-                                            $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
-                                            $formattedTimeLabel = date("F j, Y, g:i A", strtotime($latestTimeLabel));
-                                            echo '<span data-toggle="tooltip" title="Full Time: ' . htmlspecialchars($latestTimeLabel) . '">' . htmlspecialchars($formattedTimeLabel) . '</span>';
-                                        } else {
-                                            echo "No data available";
-                                        }
-                                    ?>
-                                </div>
-                            </div>
-                            <canvas id="barChart_<?php echo $index; ?>" style="height: 250px;"></canvas>
-                        </div>
-                    </div>
-                </div>
+<!-- Bar Chart in a Card -->
+<div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">Heat Index Overview</h5>
+    <div class="time-frame" id="timeFrame-barChart" 
+        style="background-color: rgba(255, 255, 255, 0.9); 
+               padding: 10px 15px; 
+               border-radius: 5px; 
+               box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+               font-weight: bold; 
+               font-size: 14px;">
+       <strong>Time Frame:</strong><br>
+       From <?= htmlspecialchars(date('F j, Y, g:i A', strtotime($startDate))) ?> to <?= htmlspecialchars(date('F j, Y, g:i A', strtotime($endDate))) ?>
+    </div>
+</div>
 
-                <div class="col-lg-6 col-md-12 mb-4">
-                    <div class="card shadow-sm rounded h-100 card-hover" style="border: none; transition: transform 0.2s;">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <h4 style="font-size: 1.5rem; font-weight: bold;"><?php echo htmlspecialchars($locationName); ?> Trends</h4>
-                                <div class="text-right" id="timeLabel_<?php echo $index; ?>" style="font-size: 14px; color: #666; font-weight: bold;">
-                                    <?php
-                                        // Display the latest time label for the location
-                                        if (isset($locationData[$locationName]['timeLabels']) && !empty($locationData[$locationName]['timeLabels'])) {
-                                            $latestTimeLabel = end($locationData[$locationName]['timeLabels']);
-                                            $formattedTimeLabel = date("F j, Y, g:i A", strtotime($latestTimeLabel));
-                                            echo '<span data-toggle="tooltip" title="Full Time: ' . htmlspecialchars($latestTimeLabel) . '">' . htmlspecialchars($formattedTimeLabel) . '</span>';
-                                        } else {
-                                            echo "No data available";
-                                        }
-                                    ?>
-                                </div>
-                            </div>
-                            <canvas id="lineChart_<?php echo $index; ?>" style="height: 250px;"></canvas>
-                        </div>
-                    </div>
-                </div>
+<div class="card-body">
+    <div id="barChart"></div> <!-- Use a div for ApexCharts -->
+</div>
 
-                <script>
-                    // Bar Chart Rendering
-                    (function(index, locationName) {
-                        const avgTemperature = <?php echo json_encode($avgTemperatures[$index] ?? 0); ?>;
-                        const avgHumidity = <?php echo json_encode($avgHumidity[$index] ?? 0); ?>;
-                        const avgHeatIndex = <?php echo json_encode($avgHeatIndexes[$index] ?? 0); ?>;
 
-                        const ctxBar = document.getElementById(`barChart_${index}`).getContext('2d');
-                        new Chart(ctxBar, {
-                            type: 'bar',
-                            data: {
-                                labels: ['Average Temperature (°C)', 'Average Humidity (%)', 'Average Heat Index'],
-                                datasets: [{
-                                    label: locationName,
-                                    data: [avgTemperature, avgHumidity, avgHeatIndex],
-                                    backgroundColor: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(255, 206, 86, 0.6)'],
-                                    borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)'],
-                                    borderWidth: 2,
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                scales: {
-                                    y: { beginAtZero: true }
-                                },
-                                plugins: {
-                                    legend: { display: false },
-                                    title: { display: true, text: `Average Readings for ${locationName}` },
-                                    tooltip: {
-                                        callbacks: {
-                                            label: function(tooltipItem) {
-                                                return `${tooltipItem.dataset.label}: ${tooltipItem.raw}`;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    })(<?php echo $index; ?>, '<?php echo addslashes($locationName); ?>');
-
-                    // Line Chart Rendering
-                   
-                   
-                    (function(index, locationName) {
-    const data = <?php echo json_encode($locationData[$locationName]); ?>;
-
-    const formatData = (dataArray) => dataArray.map(value => Number(value).toFixed(2));
-
-    const ctxLine = document.getElementById(`lineChart_${index}`).getContext('2d');
-    new Chart(ctxLine, {
-        type: 'line',
-        data: {
-            labels: data.timeLabels.map(label => new Date(label).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })), // Show only hours
-            datasets: [
-                { 
-                    label: 'Average Temperature (°C)',
-                    data: formatData(data.avgTemperatures),
-                    fill: false,
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    tension: 0.1,
-                    pointBackgroundColor: 'rgba(255, 99, 132, 1)',
-                },
-                { 
-                    label: 'Average Humidity (%)',
-                    data: formatData(data.avgHumidity),
-                    fill: false,
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    tension: 0.1,
-                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-                },
-                { 
-                    label: 'Average Heat Index',
-                    data: formatData(data.avgHeatIndexes),
-                    fill: false,
-                    borderColor: 'rgba(255, 206, 86, 1)',
-                    tension: 0.1,
-                    pointBackgroundColor: 'rgba(255, 206, 86, 1)',
-                }
-            ]
+<script>
+    var options = {
+        chart: {
+            type: 'bar',
+            height: 400,
+            toolbar: {
+                show: true // Show the toolbar
+            }
         },
-        options: {
-            responsive: true,
-            scales: {
-                x: {
-                    ticks: {
-                        autoSkip: true,
-                        maxTicksLimit: 8,
-                        maxRotation: 0,
-                        minRotation: 0
-                    },
-                    grid: {
-                        display: true,
-                        color: 'rgba(200, 200, 200, 0.5)'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        display: true,
-                        color: 'rgba(200, 200, 200, 0.5)'
-                    }
-                }
-            },
-            plugins: {
-                legend: { display: true },
-                title: { display: true, text: `Trends for ${locationName}` },
-                tooltip: {
-                    callbacks: {
-                        label: function(tooltipItem) {
-                            return `${tooltipItem.dataset.label}: ${Number(tooltipItem.raw).toFixed(2)}`;
-                        }
-                    }
-                }
-            },
-            elements: {
-                point: {
-                    radius: 5,
-                    hoverRadius: 8
+        series: [{
+            name: 'Average Heat Index',
+            data: <?= json_encode($avgHeatIndexes); ?>
+        }, {
+            name: 'Max Heat Index',
+            data: <?= json_encode($maxHeatIndexes); ?>
+        }],
+        xaxis: {
+            categories: <?= json_encode($locations); ?>,
+            title: {
+                text: 'Locations',
+                style: {
+                    fontSize: '14px', // Set font size for the title
+                    fontWeight: 'bold'
                 }
             }
+        },
+        yaxis: {
+            title: {
+                text: 'Heat Index (°C)', // Include unit in the title
+                style: {
+                    fontSize: '14px', // Set font size for the title
+                    fontWeight: 'bold'
+                }
+            },
+            min: 0, // Start y-axis from 0
+            labels: {
+                formatter: function(value) {
+                    return Math.floor(value); // Remove decimals from y-axis labels
+                }
+            }
+        },
+        tooltip: {
+            shared: true,
+            intersect: false,
+            y: {
+                formatter: function(value) {
+                    return value.toFixed(2) + ' °C'; // Show data points with two decimal places and unit
+                }
+            }
+        },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'center',
+            fontSize: '14px' // Increase font size for legend
+        },
+        plotOptions: {
+            bar: {
+                horizontal: false, // Make the bars vertical
+                columnWidth: '70%', // Width of the bars
+                endingShape: 'rounded' // Round the edges of the bars
+            }
+        },
+        dataLabels: {
+            enabled: true, // Show data labels on the bars
+            style: {
+                fontSize: '12px', // Font size for data labels
+                colors: ['#304758'] // Color of the data labels
+            },
+            formatter: function(value) {
+                return value.toFixed(2) + ' °C'; // Format data labels to two decimals with unit
+            }
         }
-    });
-})(<?php echo $index; ?>, '<?php echo addslashes($locationName); ?>');
+    };
 
-               </script>
+    var chart = new ApexCharts(document.querySelector("#barChart"), options);
+    chart.render();
+</script>
 
-            <?php 
-                endif; // End of location check
-            endforeach; 
-            ?>
+        <!-- Line Charts for Each Location -->
+        <?php foreach ($locationData as $locationName => $data): ?>
+            <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Heat Index Trends for <?= htmlspecialchars($locationName); ?></h5>
+        <div class="time-frame" id="timeFrame-<?= htmlspecialchars($locationName); ?>" 
+            style="background-color: rgba(255, 255, 255, 0.9); 
+                   padding: 10px 15px; 
+                   border-radius: 5px; 
+                   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+                   font-weight: bold; 
+                   font-size: 14px;">
+            <strong>Time Frame:</strong><br>
+            From <?= htmlspecialchars(date('F j, Y, g:i A', strtotime($startDate))) ?> to <?= htmlspecialchars(date('F j, Y, g:i A', strtotime($endDate))) ?>
         </div>
     </div>
+    
+    <div class="card-body">
+        <div id="lineChart-<?= htmlspecialchars($locationName); ?>" style="height: 400px;"></div>
+    </div>
+</div>
+
+<script>
+    var selectedInterval = 'hourly'; // Change this value dynamically based on user selection
+
+    // Set the time unit and x-axis label format based on the selected interval
+    var timeUnit;
+    var xAxisLabelFormat;
+
+    switch (selectedInterval) {
+        case 'hourly':
+            timeUnit = 'hour';
+            xAxisLabelFormat = {
+                hour: 'hh:mm a', // Format for hour
+            };
+            break;
+        case 'daily':
+            timeUnit = 'day';
+            xAxisLabelFormat = {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+            };
+            break;
+        case 'weekly':
+            timeUnit = 'week';
+            xAxisLabelFormat = {
+                week: 'MMM dd',
+                month: 'long',
+                year: 'numeric',
+            };
+            break;
+        case 'monthly':
+            timeUnit = 'month';
+            xAxisLabelFormat = {
+                month: 'long',
+                year: 'numeric',
+            };
+            break;
+        case 'yearly':
+            timeUnit = 'year';
+            xAxisLabelFormat = {
+                year: 'numeric',
+            };
+            break;
+        default:
+            timeUnit = 'day'; // Default to daily if not recognized
+            xAxisLabelFormat = {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+            };
+    }
+
+    var options = {
+        chart: {
+            type: 'line',
+            height: 400,
+            zoom: {
+                enabled: false
+            }
+        },
+        series: [{
+            name: 'Average Heat Index',
+            data: <?= json_encode($data['avgHeatIndexes']); ?>
+        }, {
+            name: 'Max Heat Index',
+            data: <?= json_encode($data['maxHeatIndexes']); ?>
+        }],
+        xaxis: {
+            categories: <?= json_encode($data['timeLabels']); ?>,
+            type: 'datetime',
+            labels: {
+                formatter: function (value) {
+                    const date = new Date(value);
+                    if (selectedInterval === 'hourly') {
+                        return date.toLocaleString('en-US', { 
+                            hour: 'numeric', 
+                            minute: 'numeric', 
+                            hour12: true 
+                        });
+                    } else if (selectedInterval === 'daily') {
+                        return date.toLocaleString('en-US', { 
+                            day: 'numeric', 
+                            month: 'long', 
+                            year: 'numeric' 
+                        });
+                    } else if (selectedInterval === 'weekly') {
+                        return date.toLocaleString('en-US', { 
+                            month: 'long', 
+                            year: 'numeric' 
+                        });
+                    } else if (selectedInterval === 'monthly') {
+                        return date.toLocaleString('en-US', { 
+                            month: 'long', 
+                            year: 'numeric' 
+                        });
+                    } else if (selectedInterval === 'yearly') {
+                        return date.toLocaleString('en-US', { 
+                            year: 'numeric' 
+                        });
+                    }
+                },
+                rotate: -15, // Rotate labels for better visibility
+                style: {
+                    fontSize: '12px' // Increase font size for readability
+                }
+            }
+        },
+        yaxis: {
+            title: {
+                text: 'Heat Index (°C)', // Include unit in the title
+                style: {
+                    fontSize: '14px', // Increase font size for the title
+                    fontWeight: 'bold'
+                }
+            },
+            min: 0,
+            max: Math.max(...<?= json_encode($data['avgHeatIndexes']); ?>, ...<?= json_encode($data['maxHeatIndexes']); ?>) + 10, // Set max based on data
+            tickAmount: 5, // Control the number of ticks on the y-axis
+            labels: {
+                formatter: function (value) {
+                    return value.toFixed(2); // Format to two decimal places
+                },
+                style: {
+                    fontSize: '12px' // Increase font size for readability
+                }
+            }
+        },
+        tooltip: {
+            shared: true,
+            intersect: false,
+            x: {
+                formatter: function (value) {
+                    const date = new Date(value);
+                    return date.toLocaleString('en-US', { 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric', 
+                        hour: 'numeric', 
+                        minute: 'numeric', 
+                        hour12: true 
+                    });
+                }
+            },
+            y: {
+                formatter: function (value) {
+                    return value.toFixed(2) + ' °C'; // Show data points with two decimal places and unit
+                }
+            }
+        },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'center',
+            fontSize: '14px' // Increase font size for legend
+        }
+    };
+
+    var chart = new ApexCharts(document.querySelector("#lineChart-<?= htmlspecialchars($locationName); ?>"), options);
+    chart.render();
+</script>
+
+
+
+
+
+
+
+
+        <?php endforeach; ?>
+
+        <?php $conn->close(); ?>
+    </div>
 </main>
+
 
 
     <!-- Include Bootstrap's tooltip initialization -->

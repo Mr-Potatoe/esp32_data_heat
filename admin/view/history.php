@@ -87,26 +87,23 @@ $conn = dbConnect();
 
     <main id="main" class="main">
         <div class="container">
-            <h1><i class="bi bi-table"></i> Heatmap Table Data by Location</h1>
-
+        <h1 class="mb-4"><i class="bi bi-table"></i> Location Table Data</h1>
             <div class="card p-3 mb-4 filter-form">
-                <h5 class="card-title">Filter Data</h5>
+                <h5 class="card-title"><i class="bi bi-funnel me-2"></i>Filter Data</h5>
                 <form method="GET">
                     <div class="form-row d-flex flex-wrap">
                         <!-- Location Filter Dropdown -->
-<div class="form-group col-md-4 col-sm-12">
-    <label for="locations">Select Location:</label>
-    <select id="locations" name="location" class="form-control">
-        <option value="">All Locations</option> <!-- Option to show all locations -->
-        <?php foreach ($allLocations as $location): ?>
-            <option value="<?= htmlspecialchars($location) ?>" <?= $selectedLocation == $location ? 'selected' : '' ?>>
-                <?= htmlspecialchars($location) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-</div>
-
-
+                        <div class="form-group col-md-4 col-sm-12">
+                            <label for="locations">Select Location:</label>
+                            <select id="locations" name="location" class="form-control">
+                                <option value="">All Locations</option> <!-- Option to show all locations -->
+                                <?php foreach ($allLocations as $location): ?>
+                                    <option value="<?= htmlspecialchars($location) ?>" <?= $selectedLocation == $location ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($location) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         <div class="form-group col-md-4 col-sm-12">
                             <label for="filter" class="mr-2">Select Time Filter:</label>
                             <div class="dropdown-icon-wrapper">
@@ -136,8 +133,8 @@ $conn = dbConnect();
 
                     <!-- Filter Button -->
                     <div class="form-group d-flex justify-content-start">
-                        <button type="submit" class="btn btn-primary me-2">Filter</button>
-                        <a href="history.php" class="btn btn-secondary">Clear Filters</a>
+                        <button type="submit" class="btn btn-primary me-2"><i class="bi bi-search me-1"></i>Filter</button>
+                        <a href="history.php" class="btn btn-secondary"><i class="bi bi-arrow-clockwise me-1"></i>Clear Filters</a>
                     </div>
                 </form>
             </div>
@@ -158,6 +155,7 @@ $conn = dbConnect();
             ?>
                     <div class="container">
                         <h2><i class="bi bi-geo-alt-fill"></i> <?= htmlspecialchars($currentLocation) ?></h2>
+                        <?php include '../components/legend.php' ?>
                         <table>
                             <thead>
                                 <tr>

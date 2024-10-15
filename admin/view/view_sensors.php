@@ -102,15 +102,16 @@ $conn = dbConnect();
 
 <main id="main" class="main">
 <div class="container">
-<h2><i class="bi bi-speedometer2"></i> Sensor Data View</h2>
+
+<h1 class="mb-4"><i class="bi bi-table"></i> Location Table Data</h1>
 
 
-<?php include '../components/legend.php' ?>
+
 
 
 
 <div class="card p-3 mb-4 filter-form">
-    <h5 class="card-title">Filter by Location</h5>
+    <h5 class="card-title"><i class="bi bi-funnel me-2"></i>Filter by Location</h5>
     <form method="GET">
         <div class="form-row d-flex flex-wrap">
             <!-- Location Name Dropdown -->
@@ -145,8 +146,8 @@ $conn = dbConnect();
 
         <!-- Filter Button -->
         <div class="d-flex justify-content-start">
-            <button type="submit" class="btn btn-primary me-2">Filter</button>
-            <a href="view_sensors.php" class="btn btn-secondary">Clear Filters</a>
+            <button type="submit" class="btn btn-primary me-2"><i class="bi bi-search me-1"></i>Filter</button>
+            <a href="view_sensors.php" class="btn btn-secondary"><i class="bi bi-arrow-clockwise me-1"></i>Clear Filters</a>
         </div>
     </form>
 </div>
@@ -154,6 +155,7 @@ $conn = dbConnect();
 
 
 
+<?php include '../components/legend.php' ?>
 
 
     <table>

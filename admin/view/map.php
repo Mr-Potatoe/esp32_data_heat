@@ -74,7 +74,7 @@
 
 <main id="main" class="main">
     <div class="container">
-        <h1 class="mb-4"><i class="bi bi-map"></i> Heat Index Map ZDSPGC</h1>
+    <h1 class="mb-4"><i class="bi bi-map"></i> Heat Index Map</h1>
         <div id="map">
             <div class="legend">
                 <div class="legend-item">
