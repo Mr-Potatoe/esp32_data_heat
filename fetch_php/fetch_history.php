@@ -11,10 +11,10 @@ while ($row = $allLocationsResult->fetch_assoc()) {
 $selectedLocation = isset($_GET['location']) ? $_GET['location'] : '';
 
 // Get the filter type from the dropdown (hourly, daily, etc.)
-$filterType = isset($_GET['filter']) ? $_GET['filter'] : 'hourly';
+$filterType = isset($_GET['filter']) ? $_GET['filter'] : 'weekly';
 
 // Get the start and end date from the form, default to past year
-$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d H:i', strtotime('-1 year'));
+$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d H:i', strtotime('-1 week'));
 $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d H:i');
 
 // Prepare the SQL query with alert_time and location filter

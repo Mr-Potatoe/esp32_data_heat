@@ -60,7 +60,7 @@ $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 // Base query
 $query = "SELECT location_name, latitude, longitude, temperature, humidity, heat_index, alert, alert_time 
           FROM sensor_readings 
-          WHERE alert IS NOT NULL AND alert_time >= NOW() - INTERVAL 1 DAY";
+          WHERE alert IS NOT NULL";
 
 // Apply location filter if selected
 if (!empty($location)) {
@@ -89,14 +89,14 @@ if (!empty($alert_level)) {
     }
 }
 
-// Apply start date filter if selected
+// Apply start date and time filter if selected
 if (!empty($start_date)) {
-    $query .= " AND alert_time >= '$start_date 00:00:00'";
+    $query .= " AND alert_time >= '$start_date'";
 }
 
-// Apply end date filter if selected
+// Apply end date and time filter if selected
 if (!empty($end_date)) {
-    $query .= " AND alert_time <= '$end_date 23:59:59'";
+    $query .= " AND alert_time <= '$end_date'";
 }
 
 // Add sorting and pagination
@@ -104,6 +104,8 @@ $query .= " ORDER BY alert_time DESC LIMIT $limit OFFSET $offset";
 
 // Execute query
 $result = $conn->query($query);
+
+
 
 $location_names = [];
 $alert_counts = [];

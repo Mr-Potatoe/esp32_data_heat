@@ -142,23 +142,26 @@ $conn = dbConnect(); // Connect to the database
         <?php endif; ?>
 
 <!-- Bar Chart in a Card -->
-<div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="card-title mb-0">Heat Index Overview</h5>
-    <div class="time-frame" id="timeFrame-barChart" 
-        style="background-color: rgba(255, 255, 255, 0.9); 
-               padding: 10px 15px; 
-               border-radius: 5px; 
-               box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
-               font-weight: bold; 
-               font-size: 14px;">
-       <strong>Time Frame:</strong><br>
-       From <?= htmlspecialchars(date('F j, Y, g:i A', strtotime($startDate))) ?> to <?= htmlspecialchars(date('F j, Y, g:i A', strtotime($endDate))) ?>
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Heat Index Overview</h5>
+        <div class="time-frame" id="timeFrame-barChart" 
+            style="background-color: rgba(255, 255, 255, 0.9); 
+                   padding: 10px 15px; 
+                   border-radius: 5px; 
+                   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+                   font-weight: bold; 
+                   font-size: 14px;">
+           <strong>Time Frame:</strong><br>
+           <?= htmlspecialchars(date('M j, Y', strtotime($startDate))) ?> - <?= htmlspecialchars(date('M j, Y', strtotime($endDate))) ?>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div id="barChart"></div> <!-- Use a div for ApexCharts -->
     </div>
 </div>
 
-<div class="card-body">
-    <div id="barChart"></div> <!-- Use a div for ApexCharts -->
-</div>
 
 
 <script>
@@ -166,6 +169,11 @@ $conn = dbConnect(); // Connect to the database
         chart: {
             type: 'bar',
             height: 400,
+            zoom: {
+                enabled: true,       // Enable zooming
+                type: 'x',           // Allow zooming on the x-axis
+                autoScaleYaxis: true // Automatically scale the y-axis when zooming
+            },
             toolbar: {
                 show: true // Show the toolbar
             }
@@ -252,7 +260,7 @@ $conn = dbConnect(); // Connect to the database
                    font-weight: bold; 
                    font-size: 14px;">
             <strong>Time Frame:</strong><br>
-            From <?= htmlspecialchars(date('F j, Y, g:i A', strtotime($startDate))) ?> to <?= htmlspecialchars(date('F j, Y, g:i A', strtotime($endDate))) ?>
+            <?= htmlspecialchars(date('M j, Y', strtotime($startDate))) ?> - <?= htmlspecialchars(date('M j, Y', strtotime($endDate))) ?>
         </div>
     </div>
     
@@ -261,7 +269,10 @@ $conn = dbConnect(); // Connect to the database
     </div>
 </div>
 
+
+
 <script>
+
     var selectedInterval = 'hourly'; // Change this value dynamically based on user selection
 
     // Set the time unit and x-axis label format based on the selected interval
@@ -318,7 +329,7 @@ $conn = dbConnect(); // Connect to the database
             type: 'line',
             height: 400,
             zoom: {
-                enabled: false
+                enabled: true
             }
         },
         series: [{
@@ -389,7 +400,7 @@ $conn = dbConnect(); // Connect to the database
             }
         },
         tooltip: {
-            shared: true,
+            shared: false,
             intersect: false,
             x: {
                 formatter: function (value) {

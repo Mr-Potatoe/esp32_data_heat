@@ -28,7 +28,7 @@ $locations = $conn->query("SELECT DISTINCT location_name FROM sensor_readings")-
 $selectedLocation = isset($_GET['location_name']) ? $_GET['location_name'] : '';
 
 // Default start date to 1 day ago and end date to the current Philippine time
-$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d\TH:i:s', strtotime('-1 month')); // Added seconds
+$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d\TH:i:s', strtotime('-1 week')); // Added seconds
 $endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d\TH:i:s'); // Added seconds
 
 

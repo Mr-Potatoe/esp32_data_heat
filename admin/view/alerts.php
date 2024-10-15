@@ -30,6 +30,21 @@ $conn = dbConnect();
     border-radius: 5px; /* Rounded corners */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
+.card-title {
+    font-weight: bold; /* Bold title for emphasis */
+    margin-bottom: 1rem; /* Space below the title */
+}
+
+.form-inline {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping for small screens */
+}
+
+.form-group {
+    flex: 1; /* Each form group takes equal space */
+    min-width: 250px; /* Ensure inputs have a minimum width */
+}
+
 /* 
         .card:hover {
             transform: scale(1.05);
@@ -182,13 +197,13 @@ $conn = dbConnect();
 
 
         <div class="card p-3 mb-4 filter-form shadow-sm">
-    <h5 class="card-title mb-3"><i class="bi bi-funnel me-2"></i>Filter Alerts</h5>
-    <form method="GET" action="" class="mb-3">
-        <div class="row g-3">
+    <h5 class="card-title"><i class="bi bi-funnel me-2"></i>Filter Alerts</h5>
+    <form method="GET" action="">
+        <div class="form-row d-flex flex-wrap">
             <!-- Location Filter -->
-            <div class="col-md-4 col-sm-12">
-                <label for="location" class="form-label">Location</label>
-                <select class="form-select" name="location" id="location">
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="location" class="mr-2">Location</label>
+                <select class="form-control" name="location" id="location">
                     <option value="">All Locations</option>
                     <?php
                     // Fetch distinct locations from the database
@@ -203,9 +218,9 @@ $conn = dbConnect();
             </div>
 
             <!-- Alert Level Filter -->
-            <div class="col-md-4 col-sm-12">
-                <label for="alert_level" class="form-label">Alert Level</label>
-                <select class="form-select" name="alert_level" id="alert_level">
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="alert_level" class="mr-2">Alert Level</label>
+                <select class="form-control" name="alert_level" id="alert_level">
                     <option value="">All Alert Levels</option>
                     <option value="Not Hazardous" <?php if (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Not Hazardous') echo 'selected'; ?>>Not Hazardous</option>
                     <option value="Caution" <?php if (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Caution') echo 'selected'; ?>>Caution</option>
@@ -214,15 +229,29 @@ $conn = dbConnect();
                     <option value="Extreme Danger" <?php if (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Extreme Danger') echo 'selected'; ?>>Extreme Danger</option>
                 </select>
             </div>
-        </div>
+
+            <!-- Start Date Filter -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="start_date" class="mr-2">Start Date</label>
+                <input type="datetime-local" class="form-control" name="start_date" id="start_date" value="<?php echo isset($_GET['start_date']) ? $_GET['start_date'] : ''; ?>">
+            </div>
+
+            <!-- End Date Filter -->
+            <div class="form-group col-md-4 col-sm-12">
+                <label for="end_date" class="mr-2">End Date</label>
+                <input type="datetime-local" class="form-control" name="end_date" id="end_date" value="<?php echo isset($_GET['end_date']) ? $_GET['end_date'] : ''; ?>">
+            </div>
+       
 
         <!-- Filter Buttons -->
-        <div class="d-flex justify-content-start mt-4">
+        <div class="form-group d-flex justify-content-start">
             <button type="submit" class="btn btn-primary me-2"><i class="bi bi-search me-1"></i>Apply Filters</button>
             <a href="alerts.php" class="btn btn-secondary"><i class="bi bi-arrow-clockwise me-1"></i>Clear Filters</a>
         </div>
+        </div>
     </form>
 </div>
+
 
 
 <?php include '../components/legend.php' ?>
