@@ -15,7 +15,7 @@ $interval = isset($_GET['interval']) ? $_GET['interval'] : 'hour';
 // Set default start and end dates if not provided
 if (empty($_GET['start_date']) || empty($_GET['end_date'])) {
     $endDate = date('Y-m-d\TH:i'); // Current date and time in the correct format
-    $startDate = date('Y-m-d\TH:i', strtotime('-1 week')); // One week before in the correct format
+    $startDate = date('Y-m-d\TH:i', strtotime('-1 day')); // One week before in the correct format
 } else {
     $startDate = $_GET['start_date'];
     $endDate = $_GET['end_date'];

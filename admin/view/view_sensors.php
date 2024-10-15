@@ -118,7 +118,7 @@ $conn = dbConnect();
             <div class="form-group col-md-4 col-sm-12">
                 <label for="location_name">Select Location Name:</label>
                 <div class="dropdown-icon-wrapper">
-                    <select name="location_name" id="location_name" class="form-control" onchange="this.form.submit()">
+                    <select name="location_name" id="location_name" class="form-control">
                         <option value="">-- All Locations --</option>
                         <?php foreach ($locations as $location): ?>
                             <option value="<?= htmlspecialchars($location['location_name']) ?>" <?= ($selectedLocation == $location['location_name']) ? 'selected' : '' ?>>
@@ -133,13 +133,13 @@ $conn = dbConnect();
             <!-- Start Date Input -->
             <div class="form-group col-md-4 col-sm-12">
                 <label for="start_date">Start Date and Time:</label>
-                <input type="datetime-local" name="start_date" id="start_date" value="<?= htmlspecialchars($startDate); ?>" class="form-control" onchange="this.form.submit()">
+                <input type="datetime-local" name="start_date" id="start_date" value="<?= htmlspecialchars($startDate); ?>" class="form-control">
             </div>
 
             <!-- End Date Input -->
             <div class="form-group col-md-4 col-sm-12">
                 <label for="end_date">End Date and Time:</label>
-                <input type="datetime-local" name="end_date" id="end_date" value="<?= htmlspecialchars($endDate); ?>" class="form-control" onchange="this.form.submit()">
+                <input type="datetime-local" name="end_date" id="end_date" value="<?= htmlspecialchars($endDate); ?>" class="form-control">
             </div>
 
         </div>

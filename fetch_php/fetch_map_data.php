@@ -21,7 +21,7 @@ if ($result->num_rows > 0) {
         $timeDiff = $currentTime - $alertTime; // Time difference in seconds
 
         // Consider the sensor active if data was received within the last 600 seconds (10 minutes)
-        $row['active'] = ($timeDiff <= 300) ? true : false;
+        $row['active'] = ($timeDiff <= 600) ? true : false;
 
         $data[] = $row;
     }
