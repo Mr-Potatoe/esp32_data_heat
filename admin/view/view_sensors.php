@@ -103,12 +103,7 @@ $conn = dbConnect();
 <main id="main" class="main">
 <div class="container">
 
-<h1 class="mb-4"><i class="bi bi-table"></i> Location Table Data</h1>
-
-
-
-
-
+<h1 class="mb-4"><i class="bi bi-clock"></i> Sensor Data View</h1>
 
 <div class="card p-3 mb-4 filter-form">
     <h5 class="card-title"><i class="bi bi-funnel me-2"></i>Filter by Location</h5>
