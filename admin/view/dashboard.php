@@ -272,7 +272,6 @@ $conn = dbConnect(); // Connect to the database
 
 
 <script>
-
     var selectedInterval = 'hourly'; // Change this value dynamically based on user selection
 
     // Set the time unit and x-axis label format based on the selected interval
@@ -324,6 +323,11 @@ $conn = dbConnect(); // Connect to the database
             };
     }
 
+    var avgHeatIndexes = <?= json_encode($data['avgHeatIndexes']); ?>;
+    var maxHeatIndexes = <?= json_encode($data['maxHeatIndexes']); ?>;
+    var timeLabels = <?= json_encode($data['timeLabels']); ?>;
+    var locationName = "<?= htmlspecialchars($locationName); ?>";
+
     var options = {
         chart: {
             type: 'line',
@@ -334,13 +338,13 @@ $conn = dbConnect(); // Connect to the database
         },
         series: [{
             name: 'Average Heat Index',
-            data: <?= json_encode($data['avgHeatIndexes']); ?>
+            data: avgHeatIndexes
         }, {
             name: 'Max Heat Index',
-            data: <?= json_encode($data['maxHeatIndexes']); ?>
+            data: maxHeatIndexes
         }],
         xaxis: {
-            categories: <?= json_encode($data['timeLabels']); ?>,
+            categories: timeLabels,
             type: 'datetime',
             labels: {
                 formatter: function (value) {
@@ -388,7 +392,7 @@ $conn = dbConnect(); // Connect to the database
                 }
             },
             min: 0,
-            max: Math.max(...<?= json_encode($data['avgHeatIndexes']); ?>, ...<?= json_encode($data['maxHeatIndexes']); ?>) + 10, // Set max based on data
+            max: Math.max(...avgHeatIndexes, ...maxHeatIndexes) + 10, // Set max based on data
             tickAmount: 5, // Control the number of ticks on the y-axis
             labels: {
                 formatter: function (value) {
@@ -428,9 +432,10 @@ $conn = dbConnect(); // Connect to the database
         }
     };
 
-    var chart = new ApexCharts(document.querySelector("#lineChart-<?= htmlspecialchars($locationName); ?>"), options);
+    var chart = new ApexCharts(document.querySelector("#lineChart-" + locationName), options);
     chart.render();
 </script>
+
 
 
 
