@@ -190,194 +190,188 @@ z-index: 500; /* Ensure it is on top */
 
 
     <script>
-        
+    // Initialize the map
+    const map = L.map('map').setView([7.9473004, 123.5876167], 18); // Default view at ZDSPGC coordinates
 
-        // Initialize the map
-        const map = L.map('map').setView([7.9473004, 123.5876167], 18); // Default view at ZDSPGC coordinates
+    // Add a tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-        // Add a tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+    // Create a heatmap layer with more intense heat index representation
+    let heat = L.heatLayer([], {
+        radius: 35, // Increase radius for wider heat spread
+        blur: 30,   // Increase blur for smoother gradients
+        maxZoom: 18,
+        max: 1.0, // Ensures that the intensity of heat index values is maximized
+        gradient: {
+            0.0: 'blue',        // Very low heat index
+            0.2: 'cyan',        // Cool
+            0.4: 'lime',        // Mild warmth
+            0.6: 'yellow',      // Neutral
+            0.8: 'orange',      // Starting to get hot
+            1.0: 'red'          // Extreme heat
+        }
+    }).addTo(map);
 
-        // Create a heatmap layer
-        let heat = L.heatLayer([], {
-            radius: 25,
-            blur: 20,
-            maxZoom: 18,
-            gradient: {
-                0.0: 'blue',        // Very low heat index
-                0.2: 'cyan',        // Cool
-                0.4: 'lime',        // Mild warmth
-                0.6: 'yellow',      // Neutral
-                0.8: 'orange',      // Starting to get hot
-                1.0: 'red'          // Extreme heat
-            }
-        }).addTo(map);
-
-
-        // Layer group for tooltips
-        const markerLayer = L.layerGroup().addTo(map);
+    // Layer group for tooltips
+    const markerLayer = L.layerGroup().addTo(map);
 
     // Function to fetch and update heatmap data
-function fetchSensorData() {
-    
-    fetch('../../fetch_php/fetch_map_data.php') // Fetch data from your PHP script
-        .then(response => response.json())
-        .then(data => {
-            // Get the state of the filter checkbox
-            const showActiveOnly = document.getElementById('filterActive').checked;
+    function fetchSensorData() {
+        fetch('../../fetch_php/fetch_map_data.php') // Fetch data from your PHP script
+            .then(response => response.json())
+            .then(data => {
+                // Get the state of the filter checkbox
+                const showActiveOnly = document.getElementById('filterActive').checked;
 
-            // Filter data based on the checkbox state
-            const filteredData = showActiveOnly ? data.filter(sensor => sensor.active) : data;
+                // Filter data based on the checkbox state
+                const filteredData = showActiveOnly ? data.filter(sensor => sensor.active) : data;
 
-            const heatData = filteredData.map(sensor => {
-                const { latitude, longitude, heat_index } = sensor;
-                return [parseFloat(latitude), parseFloat(longitude), heat_index / 50]; // Adjust intensity
-            });
+                // Prepare heatmap data (scale heat index for better intensity mapping)
+                const heatData = filteredData.map(sensor => {
+                    const { latitude, longitude, heat_index } = sensor;
+                    // Scale heat index from 0.0 to 1.0, and adjust the intensity factor to exaggerate heat distribution
+                    return [parseFloat(latitude), parseFloat(longitude), heat_index / 60]; 
+                });
 
-            // Clear the current heatmap and markers
-            heat.setLatLngs([]);
-            markerLayer.clearLayers();
+                // Clear the current heatmap and markers
+                heat.setLatLngs([]);
+                markerLayer.clearLayers();
 
-            // Update heatmap
-            heat.setLatLngs(heatData);
+                // Update heatmap with new data
+                heat.setLatLngs(heatData);
 
-            // Add markers with tooltips
-            filteredData.forEach(sensor => {
-                const { latitude, longitude, heat_index, temperature, humidity, alert, location_name, alert_time, active } = sensor;
-                const lat = parseFloat(latitude);
-                const lng = parseFloat(longitude);
+                // Add markers with tooltips
+                filteredData.forEach(sensor => {
+                    const { latitude, longitude, heat_index, temperature, humidity, alert, location_name, alert_time, active } = sensor;
+                    const lat = parseFloat(latitude);
+                    const lng = parseFloat(longitude);
 
-                const marker = L.circleMarker([lat, lng], {
-                    radius: 10,
-                    color: 'transparent',
-                    fillOpacity: 0
-                }).addTo(markerLayer);
+                    const marker = L.circleMarker([lat, lng], {
+                        radius: 8, // Adjust radius for visibility
+                        color: 'transparent',
+                        fillOpacity: 0
+                    }).addTo(markerLayer);
 
-                // Determine alert class and icons based on PAGASA standards
-                let alertClass = '';
-                let recommendation = ''; // New variable for recommendations
-                let alertIcon = ''; // Icon representation for each alert
-                let backgroundColor = ''; // Background color for the alert level
-                let textColor = ''; // Text color based on background for better contrast
+                    // Determine alert class and icons based on PAGASA standards
+                    let alertClass = '';
+                    let recommendation = ''; // New variable for recommendations
+                    let alertIcon = ''; // Icon representation for each alert
+                    let backgroundColor = ''; // Background color for the alert level
+                    let textColor = ''; // Text color based on background for better contrast
 
-                switch (alert) {
-                    case 'Not Hazardous':
-                        alertClass = 'alert-normal';
-                        alertIcon = '✅'; // Check mark icon
-                        recommendation = 'Good for outdoor activities. Stay hydrated.';
-                        backgroundColor = '#d4edda'; // Light green
-                        textColor = '#155724'; // Darker green for contrast
-                        break;
-                    case 'Caution':
-                        alertClass = 'alert-caution';
-                        alertIcon = '⚠️'; // Warning icon
-                        recommendation = 'Stay hydrated, avoid strenuous activities.';
-                        backgroundColor = '#fff3cd'; // Light yellow
-                        textColor = '#856404'; // Darker yellow-brown for contrast
-                        break;
-                    case 'Extreme Caution':
-                        alertClass = 'alert-extreme-caution';
-                        alertIcon = '🌞'; // Sun icon
-                        recommendation = 'Limit outdoor activities, take breaks in cool areas.';
-                        backgroundColor = '#ffeeba'; // Deeper yellow
-                        textColor = '#856404'; // Same darker yellow-brown for consistency
-                        break;
-                    case 'Danger':
-                        alertClass = 'alert-danger';
-                        alertIcon = '🚨'; // Alarm icon
-                        recommendation = 'Minimize outdoor exposure, stay hydrated.';
-                        backgroundColor = '#f8d7da'; // Light red
-                        textColor = '#721c24'; // Darker red for contrast
-                        break;
-                    case 'Extreme Danger':
-                        alertClass = 'alert-extreme-danger';
-                        alertIcon = '⛔'; // Stop icon
-                        recommendation = 'Stay indoors, avoid outdoor activities.';
-                        backgroundColor = '#f5c6cb'; // Deep red
-                        textColor = '#721c24'; // Same darker red for consistency
-                        break;
-                    default:
-                        alertClass = 'alert-normal'; // Default case
-                        alertIcon = '✅'; // Check mark icon
-                        recommendation = 'Good for outdoor activities. Stay hydrated.';
-                        backgroundColor = '#d4edda'; // Light green
-                        textColor = '#155724'; // Darker green for contrast
-                }
+                    switch (alert) {
+                        case 'Not Hazardous':
+                            alertClass = 'alert-normal';
+                            alertIcon = '✅'; // Check mark icon
+                            recommendation = 'Good for outdoor activities. Stay hydrated.';
+                            backgroundColor = '#d4edda'; // Light green
+                            textColor = '#155724'; // Darker green for contrast
+                            break;
+                        case 'Caution':
+                            alertClass = 'alert-caution';
+                            alertIcon = '⚠️'; // Warning icon
+                            recommendation = 'Stay hydrated, avoid strenuous activities.';
+                            backgroundColor = '#fff3cd'; // Light yellow
+                            textColor = '#856404'; // Darker yellow-brown for contrast
+                            break;
+                        case 'Extreme Caution':
+                            alertClass = 'alert-extreme-caution';
+                            alertIcon = '🌞'; // Sun icon
+                            recommendation = 'Limit outdoor activities, take breaks in cool areas.';
+                            backgroundColor = '#ffeeba'; // Deeper yellow
+                            textColor = '#856404'; // Same darker yellow-brown for consistency
+                            break;
+                        case 'Danger':
+                            alertClass = 'alert-danger';
+                            alertIcon = '🚨'; // Alarm icon
+                            recommendation = 'Minimize outdoor exposure, stay hydrated.';
+                            backgroundColor = '#f8d7da'; // Light red
+                            textColor = '#721c24'; // Darker red for contrast
+                            break;
+                        case 'Extreme Danger':
+                            alertClass = 'alert-extreme-danger';
+                            alertIcon = '⛔'; // Stop icon
+                            recommendation = 'Stay indoors, avoid outdoor activities.';
+                            backgroundColor = '#f5c6cb'; // Deep red
+                            textColor = '#721c24'; // Same darker red for consistency
+                            break;
+                        default:
+                            alertClass = 'alert-normal'; // Default case
+                            alertIcon = '✅'; // Check mark icon
+                            recommendation = 'Good for outdoor activities. Stay hydrated.';
+                            backgroundColor = '#d4edda'; // Light green
+                            textColor = '#155724'; // Darker green for contrast
+                  
+                        }
 
-                // Determine the active status
-                let activeStatus = active ? 'Active' : 'Inactive';
+                    // Determine the active status
+                    let activeStatus = active ? 'Active' : 'Inactive';
 
-                // Bind tooltip to show sensor details with alert level background color and icons
-                marker.bindTooltip(`
-                                    <div class="custom-tooltip" style="
-                                        padding: 8px;  /* Reduced padding */
-                                        background-color: ${backgroundColor}; 
-                                        border-radius: 5px;
-                                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                                        font-family: Arial, sans-serif;
-                                        color: #333;
-                                        text-align: left;
-                                        width: 300px; /* Set a max width for better control */
-                                        font-size: 14px; /* Reduced font size */
-                                        overflow: hidden; /* Prevent overflow */
-                                        white-space: normal; /* Allow text to wrap */
-                                        word-wrap: break-word; /* Break long words */
-                                        ">
-                                        <div style="margin-bottom: 4px;">
-                                            <i class="bi bi-compass-fill" style="color: #007bff;"></i> <!-- Blue for location -->
-                                            <strong>Location:</strong> ${location_name}
-                                        </div>
-                                        <div style="margin-bottom: 4px;">
-                                            <i class="bi bi-exclamation-circle-fill" style="color: #dc3545;"></i> <!-- Red for alert level -->
-                                            <strong>Alert Level:</strong> 
-                                            <span class="${alertClass}" style="
-                                                font-size: 14px;  /* Match the tooltip font size */
-                                                font-weight: bold;
-                                                color: ${textColor};
-                                                padding: 4px 8px;  /* Reduced padding */
-                                                border-radius: 4px;
-                                                background: rgba(255, 255, 255, 0.3);
-                                            ">${alertIcon} ${alert}</span>
-                                        </div>
-                                        <div style="margin-bottom: 4px;">
-                                            <i class="bi bi-thermometer-high" style="color: #ff9800;"></i> <!-- Orange for heat index -->
-                                            <strong>Heat Index:</strong> ${heat_index} °C
-                                        </div>
-                                        <div style="margin-bottom: 4px;">
-                                            <i class="bi bi-thermometer" style="color: #2196f3;"></i> <!-- Blue for temperature -->
-                                            <strong>Temperature:</strong> ${temperature} °C
-                                        </div>
-                                        <div style="margin-bottom: 4px;">
-                                            <i class="bi bi-water" style="color: #007bff;"></i> <!-- Blue for humidity -->
-                                            <strong>Humidity:</strong> ${humidity}%
-                                        </div>
-                                        <div style="margin-bottom: 4px;">
-                                            <i class="bi bi-clock" style="color: #6c757d;"></i> <!-- Gray for last update -->
-                                            <strong>Last Update:</strong> ${alert_time}
-                                        </div>
-                                        <div style="margin-bottom: 6px;">
-                                            <i class="bi bi-arrow-clockwise" style="color: #28a745;"></i> <!-- Green for status -->
-                                            <strong>Status:</strong> ${activeStatus}
-                                        </div>
-                                        <div style="padding: 6px; background: rgba(0, 0, 0, 0.05); border-radius: 3px;">
-                                            <i class="bi bi-lightbulb-fill" style="color: #ffc107;"></i> <!-- Yellow for recommendation -->
-                                            <strong>Recommendation:</strong> ${recommendation}
-                                        </div>
-                                    </div>
-                                `, { className: 'custom-tooltip', direction: 'top', offset: [0, -10] });
+                    // Bind tooltip to show sensor details with alert level background color and icons
+                    marker.bindTooltip(`
+                        <div class="custom-tooltip" style="
+                            padding: 8px;
+                            background-color: ${backgroundColor}; 
+                            border-radius: 5px;
+                            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                            font-family: Arial, sans-serif;
+                            color: #333;
+                            text-align: left;
+                            width: 300px;
+                            font-size: 14px;
+                            overflow: hidden;
+                            white-space: normal;
+                            word-wrap: break-word;">
+                            <div style="margin-bottom: 4px;">
+                                <i class="bi bi-compass-fill" style="color: #007bff;"></i>
+                                <strong>Location:</strong> ${location_name}
+                            </div>
+                            <div style="margin-bottom: 4px;">
+                                <i class="bi bi-exclamation-circle-fill" style="color: #dc3545;"></i>
+                                <strong>Alert Level:</strong> 
+                                <span class="${alertClass}" style="font-weight: bold; color: ${textColor};">
+                                    ${alertIcon} ${alert}
+                                </span>
+                            </div>
+                            <div style="margin-bottom: 4px;">
+                                <i class="bi bi-thermometer-high" style="color: #ff9800;"></i>
+                                <strong>Heat Index:</strong> ${heat_index} °C
+                            </div>
+                            <div style="margin-bottom: 4px;">
+                                <i class="bi bi-thermometer" style="color: #2196f3;"></i>
+                                <strong>Temperature:</strong> ${temperature} °C
+                            </div>
+                            <div style="margin-bottom: 4px;">
+                                <i class="bi bi-water" style="color: #007bff;"></i>
+                                <strong>Humidity:</strong> ${humidity}%
+                            </div>
+                            <div style="margin-bottom: 4px;">
+                                <i class="bi bi-clock" style="color: #6c757d;"></i>
+                                <strong>Last Update:</strong> ${alert_time}
+                            </div>
+                            <div style="margin-bottom: 6px;">
+                                <i class="bi bi-arrow-clockwise" style="color: #28a745;"></i>
+                                <strong>Status:</strong> ${activeStatus}
+                            </div>
+                            <div style="padding: 6px; background: rgba(0, 0, 0, 0.05); border-radius: 3px;">
+                                <i class="bi bi-lightbulb-fill" style="color: #ffc107;"></i>
+                                <strong>Recommendation:</strong> ${recommendation}
+                            </div>
+                        </div>
+                    `, { className: 'custom-tooltip', direction: 'top', offset: [0, -10] });
+                });
+            })
+            .catch(error => console.error('Error fetching sensor data:', error));
+    }
 
-    });
-    })
-    .catch(error => console.error('Error fetching sensor data:', error));
-}
+    // Fetch sensor data and update heatmap every 5 seconds
+    fetchSensorData();
+    setInterval(fetchSensorData, 5000);
 
-// Fetch sensor data and update heatmap every 60 seconds
-fetchSensorData();
-setInterval(fetchSensorData, 5000);
+</script>
 
-    </script>
     <!-- ======= Footer ======= -->
 <?php include '../components/footer.php'; ?>
 <?php include '../components/scripts.php'; ?>

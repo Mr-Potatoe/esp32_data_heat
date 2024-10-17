@@ -1,5 +1,6 @@
 <?php
 
+
 // Define how many results you want per page
 $resultsPerPage = 10;
 
@@ -18,24 +19,21 @@ $currentPage = max(1, min($currentPage, $totalPages)); // Ensure it's within ran
 // Calculate the starting limit for the SQL query
 $startLimit = ($currentPage - 1) * $resultsPerPage;
 
-
 // Fetch all unique location names
 $locations = $conn->query("SELECT DISTINCT location_name FROM sensor_readings")->fetch_all(MYSQLI_ASSOC);
 
-
-
-// Get the selected location and date range from the dropdown and filters
+// Get the selected filters from the dropdown and URL parameters
 $selectedLocation = isset($_GET['location_name']) ? $_GET['location_name'] : '';
+$selectedAlertLevel = isset($_GET['alert_level']) ? $_GET['alert_level'] : '';
 
 // Default start date to 1 day ago and end date to the current Philippine time
-$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d\TH:i:s', strtotime('-1 day')); // Added seconds
-$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d\TH:i:s'); // Added seconds
+$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d\TH:i:s', strtotime('-1 day'));
+$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d\TH:i:s');
 
-
-// Prepare the SQL query to fetch data based on the selected location and date range with pagination
+// Prepare the SQL query to fetch data based on the selected location, date range, and alert level with pagination
 $sql = "SELECT *, 
                CASE 
-                   WHEN heat_index < 27 THEN 'Normal' 
+                   WHEN heat_index < 27 THEN 'Not Hazardous' 
                    WHEN heat_index >= 27 AND heat_index < 33 THEN 'Caution' 
                    WHEN heat_index >= 33 AND heat_index < 42 THEN 'Extreme Caution' 
                    WHEN heat_index >= 42 AND heat_index < 52 THEN 'Danger' 
@@ -51,11 +49,21 @@ if ($selectedLocation) {
 }
 if ($startDate) {
     $sql .= " AND alert_time >= ?";
-    $params[] = $startDate; // Already in 'Y-m-d H:i:s' format
+    $params[] = $startDate;
 }
 if ($endDate) {
     $sql .= " AND alert_time <= ?";
-    $params[] = $endDate; // Already in 'Y-m-d H:i:s' format
+    $params[] = $endDate;
+}
+if ($selectedAlertLevel) {
+    $sql .= " AND CASE 
+                   WHEN heat_index < 27 THEN 'Not Hazardous' 
+                   WHEN heat_index >= 27 AND heat_index < 33 THEN 'Caution' 
+                   WHEN heat_index >= 33 AND heat_index < 42 THEN 'Extreme Caution' 
+                   WHEN heat_index >= 42 AND heat_index < 52 THEN 'Danger' 
+                   ELSE 'Extreme Danger' 
+               END = ?";
+    $params[] = $selectedAlertLevel;
 }
 
 $sql .= " ORDER BY alert_time DESC LIMIT ?, ?"; // Add ORDER BY alert_time DESC
@@ -65,17 +73,16 @@ $stmt = $conn->prepare($sql);
 $types = str_repeat("s", count($params)); // Determine parameter types
 if ($params) {
     $types .= "ii"; // Adding start limit and results per page as integers
- // Combine pagination parameters with existing parameters
- $paginationParams = [$startLimit, $resultsPerPage];
- $allParams = array_merge($params, $paginationParams);
- 
- // Bind parameters to statement
- $stmt->bind_param($types, ...$allParams);
- 
+    // Combine pagination parameters with existing parameters
+    $paginationParams = [$startLimit, $resultsPerPage];
+    $allParams = array_merge($params, $paginationParams);
+    
+    // Bind parameters to statement
+    $stmt->bind_param($types, ...$allParams);
+    
 } else {
     $stmt->bind_param("ii", $startLimit, $resultsPerPage); // Binding start limit and results per page as integers
 }
-
 
 // Execute the statement
 $stmt->execute();
@@ -95,7 +102,5 @@ function getAlertLevelAndClass($heatIndex) {
         return ['Extreme Danger', 'extreme-danger']; // Extreme Danger (>=52°C)
     }
 }
-
-
 
 ?>

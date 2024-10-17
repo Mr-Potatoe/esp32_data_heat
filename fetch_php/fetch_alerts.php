@@ -1,33 +1,39 @@
 <?php
-// Fetch total number of alerts (this was previously missing)
-$queryTotalAlerts = "SELECT COUNT(*) AS total_alerts FROM sensor_readings WHERE alert IS NOT NULL AND alert_time >= NOW() - INTERVAL 1 DAY";
+// Fetch total number of alerts from the past 24 hours
+$queryTotalAlerts = "SELECT COUNT(*) AS total_alerts 
+                     FROM sensor_readings 
+                     WHERE alert IS NOT NULL 
+                     AND alert_time >= NOW() - INTERVAL 1 DAY";
 $totalAlertsResult = $conn->query($queryTotalAlerts);
-$totalAlertsData = $totalAlertsResult->fetch_assoc(); // This will contain total_alerts
+$totalAlertsData = $totalAlertsResult->fetch_assoc(); // Contains total_alerts
 
-// Fetch summary data including the location of the highest heat index
+// Fetch summary data including the location of the highest heat index in the past 24 hours
 $querySummary = "
   SELECT location_name, MAX(heat_index) AS highest_heat_index 
   FROM sensor_readings 
   WHERE alert IS NOT NULL 
+  AND alert_time >= NOW() - INTERVAL 1 DAY
   GROUP BY location_name 
   ORDER BY highest_heat_index DESC 
   LIMIT 1";
 $summaryResult = $conn->query($querySummary);
 $summaryData = $summaryResult->fetch_assoc();
 
-// Fetch total number of unique locations
-$queryLocationSummary = "SELECT COUNT(DISTINCT location_name) AS total_locations FROM sensor_readings WHERE alert IS NOT NULL";
+// Fetch total number of unique locations in the past 24 hours
+$queryLocationSummary = "SELECT COUNT(DISTINCT location_name) AS total_locations 
+                         FROM sensor_readings 
+                         WHERE alert IS NOT NULL 
+                         AND alert_time >= NOW() - INTERVAL 1 DAY";
 $locationSummaryResult = $conn->query($queryLocationSummary);
 $locationSummaryData = $locationSummaryResult->fetch_assoc();
 
-
-// Fetch chart data (alerts by location)
+// Fetch chart data (alerts by location in the past 24 hours)
 $queryChart = "SELECT location_name, COUNT(*) AS alert_count 
                FROM sensor_readings 
-               WHERE alert IS NOT NULL AND alert_time >= NOW() - INTERVAL 1 DAY
+               WHERE alert IS NOT NULL 
+               AND alert_time >= NOW() - INTERVAL 1 DAY
                GROUP BY location_name 
                ORDER BY alert_count DESC";
-
 $chartResult = $conn->query($queryChart);
 
 // Pagination logic
@@ -35,32 +41,44 @@ $limit = 10; // Number of entries to show in a page
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 
-// Fetch detailed alerts with pagination
+// Fetch detailed alerts from the past 24 hours with pagination
 $query = "SELECT location_name, latitude, longitude, temperature, humidity, heat_index, alert, alert_time 
           FROM sensor_readings 
-          WHERE alert IS NOT NULL AND alert_time >= NOW() - INTERVAL 1 DAY 
+          WHERE alert IS NOT NULL 
+          AND alert_time >= NOW() - INTERVAL 1 DAY
           ORDER BY alert_time DESC 
           LIMIT $limit OFFSET $offset";
 
 $result = $conn->query($query);
 
-// Count total number of records
-$totalQuery = "SELECT COUNT(*) AS total FROM sensor_readings WHERE alert IS NOT NULL";
+// Count total number of records in the past 24 hours
+$totalQuery = "SELECT COUNT(*) AS total 
+               FROM sensor_readings 
+               WHERE alert IS NOT NULL 
+               AND alert_time >= NOW() - INTERVAL 1 DAY";
 $totalResult = $conn->query($totalQuery);
 $totalData = $totalResult->fetch_assoc();
 $totalRows = $totalData['total'];
 $totalPages = ceil($totalRows / $limit);
 
+
+// Set default start date to 24 hours ago and end date to now
+$defaultStartDate = date('Y-m-d\TH:i:s', strtotime('-24 hours'));
+$defaultEndDate = date('Y-m-d\TH:i:s');
+
 // Initialize filter variables
 $location = isset($_GET['location']) ? $_GET['location'] : '';
 $alert_level = isset($_GET['alert_level']) ? $_GET['alert_level'] : '';
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : '';
-$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : '';
+// Use the default values if not set by the user
+$startDate = isset($_GET['start_date']) ? $_GET['start_date'] : $defaultStartDate;
+$endDate = isset($_GET['end_date']) ? $_GET['end_date'] : $defaultEndDate;
 
-// Base query
+
+// Base query for filtered data
 $query = "SELECT location_name, latitude, longitude, temperature, humidity, heat_index, alert, alert_time 
           FROM sensor_readings 
-          WHERE alert IS NOT NULL";
+          WHERE alert IS NOT NULL 
+          AND alert_time >= NOW() - INTERVAL 1 DAY"; // Ensure past 24 hours
 
 // Apply location filter if selected
 if (!empty($location)) {
@@ -105,8 +123,7 @@ $query .= " ORDER BY alert_time DESC LIMIT $limit OFFSET $offset";
 // Execute query
 $result = $conn->query($query);
 
-
-
+// Process chart data
 $location_names = [];
 $alert_counts = [];
 
@@ -117,5 +134,4 @@ while ($row = $chartResult->fetch_assoc()) {
 
 $location_names_str = implode(',', $location_names);
 $alert_counts_str = implode(',', $alert_counts);
-
 ?>

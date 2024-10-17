@@ -11,7 +11,7 @@ $conn = dbConnect();
 
 ?>
 
-<?php include '../../fetch_php/fetch_view_sensors.php'; ?>
+<?php include '../../fetch_php/fetch_sensors_data.php'; ?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -57,7 +57,7 @@ $conn = dbConnect();
     /*Custom CSS for Dropdown Icon */
 
     .dropdown-icon-wrapper {
-        position: relative;
+          position: relative;
     }
 
     .dropdown-icon {
@@ -106,52 +106,60 @@ $conn = dbConnect();
 <h1 class="mb-4"><i class="bi bi-clock"></i> Sensor Data View</h1>
 
 <div class="card p-3 mb-4 filter-form">
-    <h5 class="card-title"><i class="bi bi-funnel me-2"></i>Filter by Location</h5>
+    <h5 class="card-title"><i class="bi bi-funnel me-2"></i>Filter Data</h5>
     <form method="GET">
         <div class="form-row d-flex flex-wrap">
             <!-- Location Name Dropdown -->
-            <div class="form-group col-md-4 col-sm-12">
+            <div class="form-group col-md-3 col-sm-12">
                 <label for="location_name">Select Location Name:</label>
                 <div class="dropdown-icon-wrapper">
-                    <select name="location_name" id="location_name" class="form-control">
-                        <option value="">-- All Locations --</option>
+                    <select name="location_name" id="location_name" class="form-select form-control">
+                        <option value="">All Locations</option>
                         <?php foreach ($locations as $location): ?>
                             <option value="<?= htmlspecialchars($location['location_name']) ?>" <?= ($selectedLocation == $location['location_name']) ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($location['location_name']) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <i class="fas fa-chevron-down dropdown-icon"></i> <!-- Font Awesome icon -->
                 </div>
             </div>
 
+            <!-- Alert Level Dropdown -->
+            <div class="form-group col-md-3 col-sm-12">
+                <label for="alert_level">Select Alert Level:</label>
+                <select class="form-select form-control" name="alert_level" id="alert_level">
+                    <option value="">All Alert Levels</option>
+                    <option value="Not Hazardous" <?= (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Not Hazardous') ? 'selected' : '' ?>>Not Hazardous</option>
+                    <option value="Caution" <?= (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Caution') ? 'selected' : '' ?>>Caution</option>
+                    <option value="Extreme Caution" <?= (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Extreme Caution') ? 'selected' : '' ?>>Extreme Caution</option>
+                    <option value="Danger" <?= (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Danger') ? 'selected' : '' ?>>Danger</option>
+                    <option value="Extreme Danger" <?= (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Extreme Danger') ? 'selected' : '' ?>>Extreme Danger</option>
+                </select>
+            </div>
+
             <!-- Start Date Input -->
-            <div class="form-group col-md-4 col-sm-12">
+            <div class="form-group col-md-3 col-sm-12">
                 <label for="start_date">Start Date and Time:</label>
                 <input type="datetime-local" name="start_date" id="start_date" value="<?= htmlspecialchars($startDate); ?>" class="form-control">
             </div>
 
             <!-- End Date Input -->
-            <div class="form-group col-md-4 col-sm-12">
+            <div class="form-group col-md-3 col-sm-12">
                 <label for="end_date">End Date and Time:</label>
                 <input type="datetime-local" name="end_date" id="end_date" value="<?= htmlspecialchars($endDate); ?>" class="form-control">
             </div>
-
         </div>
 
         <!-- Filter Button -->
         <div class="d-flex justify-content-start">
             <button type="submit" class="btn btn-primary me-2"><i class="bi bi-search me-1"></i>Filter</button>
-            <a href="view_sensors.php" class="btn btn-secondary"><i class="bi bi-arrow-clockwise me-1"></i>Clear Filters</a>
+            <a href="sensors_data.php" class="btn btn-secondary"><i class="bi bi-arrow-clockwise me-1"></i>Clear Filters</a>
         </div>
     </form>
 </div>
 
 
-
-
 <?php include '../components/legend.php' ?>
-
 
     <table>
         <thead>
@@ -226,7 +234,7 @@ $conn = dbConnect();
 
         for ($page = $startPage; $page <= $endPage; $page++): ?>
             <li class="page-item <?= ($page == $currentPage) ? 'active' : '' ?>">
-                <a href="?page=<?= $page ?>&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>" class="page-link"><?= $page ?></a>
+            <a href="?page=<?= $page ?>&location_name=<?= urlencode($selectedLocation) ?>&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>&alert_level=<?= urlencode($selectedAlertLevel) ?>" class="page-link"><?= $page ?></a>
             </li>
         <?php endfor; ?>
 

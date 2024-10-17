@@ -10,7 +10,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             ['link' => 'dashboard.php', 'icon' => 'bi-house', 'label' => 'Sensor Dashboard'],
             ['link' => 'map.php', 'icon' => 'bi-map', 'label' => 'Heat Index Map'],
             ['link' => 'sensor_status.php', 'icon' => 'bi-tools', 'label' => 'Sensor Status'],
-            ['link' => 'view_sensors.php', 'icon' => 'bi-clock', 'label' => 'Sensor Data View' ],
+            ['link' => 'sensors_data.php', 'icon' => 'bi-clock', 'label' => 'Sensor Data View' ],
             ['link' => 'history.php', 'icon' => 'bi-table', 'label' => 'Location Table Data'],
             ['link' => 'alerts.php', 'icon' => 'bi-bell', 'label' => '24-Hour Alerts'],
         ];

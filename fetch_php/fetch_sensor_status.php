@@ -11,13 +11,45 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit = 5; // Number of records per page
 $offset = ($page - 1) * $limit; // Calculate offset for pagination
 
-// Query to get the total number of sensor records (distinct by sensor and location)
-$totalQuery = "SELECT COUNT(DISTINCT sensor_id, location_name) as total FROM sensor_readings";
+// Retrieve filter parameters from the GET request
+$sensorID = isset($_GET['sensorID']) ? $_GET['sensorID'] : '';
+$location = isset($_GET['location']) ? $_GET['location'] : '';
+$status = isset($_GET['status']) ? $_GET['status'] : '';
+$alert = isset($_GET['alert']) ? $_GET['alert'] : '';
+
+// Build the WHERE clause for filtering
+$whereClauses = [];
+if (!empty($sensorID)) {
+    $whereClauses[] = "sr.sensor_id LIKE '%" . $conn->real_escape_string($sensorID) . "%'";
+}
+if (!empty($location)) {
+    $whereClauses[] = "sr.location_name LIKE '%" . $conn->real_escape_string($location) . "%'";
+}
+if (!empty($status)) {
+    if ($status === 'Active') {
+        $whereClauses[] = "TIMESTAMPDIFF(MINUTE, sr.alert_time, NOW()) < 5";
+    } else {
+        $whereClauses[] = "TIMESTAMPDIFF(MINUTE, sr.alert_time, NOW()) >= 5";
+    }
+}
+if (!empty($alert)) {
+    $whereClauses[] = "sr.alert = '" . $conn->real_escape_string($alert) . "'";
+}
+
+// Combine the WHERE clauses
+$whereSQL = count($whereClauses) > 0 ? 'WHERE ' . implode(' AND ', $whereClauses) : '';
+
+// Query to get the total number of sensor records (distinct by sensor and location) with filters
+$totalQuery = "
+SELECT COUNT(DISTINCT sr.sensor_id, sr.location_name) AS total 
+FROM sensor_readings sr 
+$whereSQL
+";
 $totalResult = $conn->query($totalQuery);
 $totalRecords = $totalResult->fetch_assoc()['total'];
 $totalPages = ceil($totalRecords / $limit); // Calculate total pages
 
-// Query to fetch the latest sensor data with pagination
+// Query to fetch the latest sensor data with pagination and filters
 $query = "
 SELECT 
     sr.sensor_id,
@@ -38,12 +70,11 @@ INNER JOIN (
     FROM sensor_readings
     GROUP BY sensor_id
 ) AS latest ON sr.sensor_id = latest.sensor_id AND sr.alert_time = latest.max_alert_time
+$whereSQL
 ORDER BY 
     sr.alert_time DESC
-LIMIT $limit OFFSET $offset";
-
-
-
+LIMIT $limit OFFSET $offset
+";
 
 $result = $conn->query($query);
 

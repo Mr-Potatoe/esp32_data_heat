@@ -95,7 +95,7 @@ $conn = dbConnect();
                         <!-- Location Filter Dropdown -->
                         <div class="form-group col-md-4 col-sm-12">
                             <label for="locations">Select Location:</label>
-                            <select id="locations" name="location" class="form-control">
+                            <select id="locations" name="location" class="form-select form-control">
                                 <option value="">All Locations</option> <!-- Option to show all locations -->
                                 <?php foreach ($allLocations as $location): ?>
                                     <option value="<?= htmlspecialchars($location) ?>" <?= $selectedLocation == $location ? 'selected' : '' ?>>
@@ -107,14 +107,13 @@ $conn = dbConnect();
                         <div class="form-group col-md-4 col-sm-12">
                             <label for="filter" class="mr-2">Select Time Filter:</label>
                             <div class="dropdown-icon-wrapper">
-                                <select id="filter" name="filter" class="form-control">
+                                <select id="filter" name="filter" class="form-select form-control">
                                     <option value="hourly" <?= $filterType == 'hourly' ? 'selected' : '' ?>>Hourly</option>
                                     <option value="daily" <?= $filterType == 'daily' ? 'selected' : '' ?>>Daily</option>
                                     <option value="weekly" <?= $filterType == 'weekly' ? 'selected' : '' ?>>Weekly</option>
                                     <option value="monthly" <?= $filterType == 'monthly' ? 'selected' : '' ?>>Monthly</option>
                                     <option value="yearly" <?= $filterType == 'yearly' ? 'selected' : '' ?>>Yearly</option>
                                 </select>
-                                <i class="fas fa-chevron-down dropdown-icon"></i> <!-- Font Awesome icon -->
                             </div>
                         </div>
 

@@ -203,7 +203,7 @@ $conn = dbConnect();
             <!-- Location Filter -->
             <div class="form-group col-md-4 col-sm-12">
                 <label for="location" class="mr-2">Location</label>
-                <select class="form-control" name="location" id="location">
+                <select class="form-select form-control" name="location" id="location">
                     <option value="">All Locations</option>
                     <?php
                     // Fetch distinct locations from the database
@@ -220,7 +220,7 @@ $conn = dbConnect();
             <!-- Alert Level Filter -->
             <div class="form-group col-md-4 col-sm-12">
                 <label for="alert_level" class="mr-2">Alert Level</label>
-                <select class="form-control" name="alert_level" id="alert_level">
+                <select class="form-select form-control" name="alert_level" id="alert_level">
                     <option value="">All Alert Levels</option>
                     <option value="Not Hazardous" <?php if (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Not Hazardous') echo 'selected'; ?>>Not Hazardous</option>
                     <option value="Caution" <?php if (isset($_GET['alert_level']) && $_GET['alert_level'] == 'Caution') echo 'selected'; ?>>Caution</option>
@@ -230,17 +230,16 @@ $conn = dbConnect();
                 </select>
             </div>
 
-            <!-- Start Date Filter -->
             <div class="form-group col-md-4 col-sm-12">
-                <label for="start_date" class="mr-2">Start Date</label>
-                <input type="datetime-local" class="form-control" name="start_date" id="start_date" value="<?php echo isset($_GET['start_date']) ? $_GET['start_date'] : ''; ?>">
-            </div>
+    <label for="start_date">Start Date and Time:</label>
+    <input type="datetime-local" name="start_date" id="start_date" value="<?= htmlspecialchars($startDate); ?>" class="form-control">
+</div>
 
-            <!-- End Date Filter -->
-            <div class="form-group col-md-4 col-sm-12">
-                <label for="end_date" class="mr-2">End Date</label>
-                <input type="datetime-local" class="form-control" name="end_date" id="end_date" value="<?php echo isset($_GET['end_date']) ? $_GET['end_date'] : ''; ?>">
-            </div>
+<div class="form-group col-md-4 col-sm-12">
+    <label for="end_date">End Date and Time:</label>
+    <input type="datetime-local" name="end_date" id="end_date" value="<?= htmlspecialchars($endDate); ?>" class="form-control">
+</div>
+
        
 
         <!-- Filter Buttons -->
