@@ -170,12 +170,12 @@ $conn = dbConnect(); // Connect to the database
             type: 'bar',
             height: 400,
             zoom: {
-                enabled: true,       // Enable zooming
-                type: 'x',           // Allow zooming on the x-axis
-                autoScaleYaxis: true // Automatically scale the y-axis when zooming
+                enabled: true,
+                type: 'x',
+                autoScaleYaxis: true
             },
             toolbar: {
-                show: true // Show the toolbar
+                show: true
             }
         },
         series: [{
@@ -190,55 +190,60 @@ $conn = dbConnect(); // Connect to the database
             title: {
                 text: 'Locations',
                 style: {
-                    fontSize: '14px', // Set font size for the title
+                    fontSize: '14px',
                     fontWeight: 'bold'
                 }
             }
         },
         yaxis: {
             title: {
-                text: 'Heat Index (°C)', // Include unit in the title
+                text: 'Heat Index (°C)',
                 style: {
-                    fontSize: '14px', // Set font size for the title
+                    fontSize: '14px',
                     fontWeight: 'bold'
                 }
             },
-            min: 0, // Start y-axis from 0
+            min: 0,
             labels: {
                 formatter: function(value) {
-                    return Math.floor(value); // Remove decimals from y-axis labels
+                    return Math.floor(value);
                 }
             }
         },
         tooltip: {
-            shared: true,
+            shared: true,  // Make tooltips shared so both series show simultaneously
             intersect: false,
             y: {
-                formatter: function(value) {
-                    return value.toFixed(2) + ' °C'; // Show data points with two decimal places and unit
+                formatter: function(value, { seriesIndex, dataPointIndex }) {
+                    if (seriesIndex === 1) { // 1 is the index for "Max Heat Index"
+                        var maxTimes = <?= json_encode($maxTimes); ?>;
+                        var time = maxTimes[dataPointIndex]; // Only show time for max values
+                        return value.toFixed(2) + ' °C' + '<br><small>Time: ' + time + '</small>';
+                    }
+                    return value.toFixed(2) + ' °C'; 
                 }
             }
         },
         legend: {
             position: 'top',
             horizontalAlign: 'center',
-            fontSize: '14px' // Increase font size for legend
+            fontSize: '14px'
         },
         plotOptions: {
             bar: {
-                horizontal: false, // Make the bars vertical
-                columnWidth: '70%', // Width of the bars
-                endingShape: 'rounded' // Round the edges of the bars
+                horizontal: false,
+                columnWidth: '70%',
+                endingShape: 'rounded'
             }
         },
         dataLabels: {
-            enabled: true, // Show data labels on the bars
+            enabled: true,
             style: {
-                fontSize: '12px', // Font size for data labels
-                colors: ['#304758'] // Color of the data labels
+                fontSize: '12px',
+                colors: ['#304758']
             },
             formatter: function(value) {
-                return value.toFixed(2) + ' °C'; // Format data labels to two decimals with unit
+                return value.toFixed(2) + ' °C';
             }
         }
     };
@@ -246,6 +251,9 @@ $conn = dbConnect(); // Connect to the database
     var chart = new ApexCharts(document.querySelector("#barChart"), options);
     chart.render();
 </script>
+
+
+
 
         <!-- Line Charts for Each Location -->
         <?php foreach ($locationData as $locationName => $data): ?>

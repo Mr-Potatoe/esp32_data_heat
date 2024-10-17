@@ -46,15 +46,15 @@ switch ($interval) {
         break;
 }
 
-// Main query for both average and max heat index, grouped by location, with pagination and location filter
+// Query to get the max heat index, the time it occurred, and the average heat index for each location
 $query_avg = "SELECT location_name, AVG(heat_index) AS avg_heat_index
               FROM sensor_readings
               WHERE 1=1"; // Default condition
 
-$query_max = "SELECT location_name, MAX(heat_index) AS max_heat_index
+$query_max = "SELECT location_name, MAX(heat_index) AS max_heat_index, MAX(alert_time) AS max_time
               FROM sensor_readings
               WHERE 1=1"; // Default condition
-
+              
 // Add location, start date, and end date filters
 if (!empty($selectedLocation)) {
     $query_avg .= " AND location_name = '$selectedLocationEscaped'";
@@ -69,6 +69,7 @@ if (!empty($endDate)) {
     $query_max .= " AND alert_time <= '$endDate'";
 }
 
+// Group and limit results by pagination
 $query_avg .= " GROUP BY location_name ORDER BY location_name LIMIT $chartsPerPage OFFSET $offset";
 $query_max .= " GROUP BY location_name ORDER BY location_name LIMIT $chartsPerPage OFFSET $offset";
 
@@ -79,6 +80,7 @@ $result_max = $conn->query($query_max);
 $locations = [];
 $avgHeatIndexes = [];
 $maxHeatIndexes = [];
+$maxTimes = []; // New array to store max times
 
 if ($result_avg->num_rows > 0) {
     while ($row = $result_avg->fetch_assoc()) {
@@ -90,6 +92,7 @@ if ($result_avg->num_rows > 0) {
 if ($result_max->num_rows > 0) {
     while ($row = $result_max->fetch_assoc()) {
         $maxHeatIndexes[] = floatval($row['max_heat_index']);
+        $maxTimes[] = htmlspecialchars($row['max_time']); // Fetch the time of the maximum heat index
     }
 }
 
@@ -154,5 +157,6 @@ if ($result_time_series_avg->num_rows > 0 || $result_time_series_max->num_rows >
 
 // Display message if no data is available
 $noDataMessage = empty($locations) ? "No data available" : "";
+
 
 ?>

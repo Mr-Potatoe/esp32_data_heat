@@ -255,10 +255,7 @@ $conn = dbConnect();
 </nav>
 
 
-
-
-
-<!-- Total pages label -->
+<!-- HTML for displaying current page and total pages -->
 <div class="total-pages-label text-center mt-2">
     <strong>Page <?= $currentPage; ?> of <?= $totalPages; ?></strong>
 </div>
